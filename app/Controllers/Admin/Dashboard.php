@@ -16,11 +16,6 @@ class Dashboard extends BaseController
             return redirect()->to('/');
         }
 
-        // CEK ROLE ADMIN
-        if (session()->get('role') !== 'admin') {
-            return redirect()->to('/');
-        }
-
         $db = \Config\Database::connect();
 
         /* ======================

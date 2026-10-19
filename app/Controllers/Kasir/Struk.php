@@ -13,10 +13,6 @@ class Struk extends BaseController
 {
     public function index($id_order)
     {
-        if (session()->get('role') !== 'kasir') {
-            return redirect()->to('/');
-        }
-
         $orderModel = new OrderModel();
         $itemModel = new OrderItemModel();
         $paymentModel = new PaymentModel();

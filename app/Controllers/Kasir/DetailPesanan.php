@@ -9,10 +9,6 @@ class DetailPesanan extends BaseController
 {
     public function index($id_order = null)
     {
-        if (session()->get('role') !== 'kasir') {
-            return redirect()->to('/');
-        }
-
         $db = \Config\Database::connect();
 
         /* ======================

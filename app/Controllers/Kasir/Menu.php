@@ -54,10 +54,6 @@ class Menu extends BaseController
             return redirect()->to('/');
         }
 
-        if (session()->get('role') !== 'kasir') {
-            return redirect()->to('/');
-        }
-
         $db = \Config\Database::connect();
         $productModel = new ProductModel();
 

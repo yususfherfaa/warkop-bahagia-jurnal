@@ -80,7 +80,7 @@ $routes->group('admin', ['filter' => ['auth', 'role:admin']], static function ($
     $routes->post('kasir/update/(:segment)', 'Admin\Kasir::update/$1');
     $routes->get('kasir/delete/(:segment)', 'Admin\Kasir::delete/$1');
 
-    $routes->get('qr-meja', 'Admin\Setting::qrMeja');
+    $routes->get('qr-meja', 'Admin\Setting::qrMeja', ['filter' => ['auth', 'role:admin']]);
     $routes->get('settings', 'Admin\Setting::index');
     $routes->post('settings/update', 'Admin\Setting::update');
 });

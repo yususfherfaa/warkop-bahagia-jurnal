@@ -8,10 +8,6 @@ class Kasir extends BaseController
 {
     public function index()
     {
-        if (session()->get('role') !== 'admin') {
-            return redirect()->to('/');
-        }
-
         $db = \Config\Database::connect();
 
         $kasirBuilder = $db->table('users')->where('role', 'kasir');
@@ -27,19 +23,11 @@ class Kasir extends BaseController
 
     public function add()
     {
-        if (session()->get('role') !== 'admin') {
-            return redirect()->to('/');
-        }
-
         return view('admin/kasir/add');
     }
 
     public function save()
     {
-        if (session()->get('role') !== 'admin') {
-            return redirect()->to('/');
-        }
-
         if (!$this->validate([
             'nama' => 'required|max_length[100]',
             'username' => 'required|alpha_numeric_punct|min_length[3]|max_length[50]|is_unique[users.username]',
@@ -95,10 +83,6 @@ class Kasir extends BaseController
 
     public function edit($id)
     {
-        if (session()->get('role') !== 'admin') {
-            return redirect()->to('/');
-        }
-
         $db = \Config\Database::connect();
 
         $kasir = $db->table('users')
@@ -118,10 +102,6 @@ class Kasir extends BaseController
 
     public function update($id)
     {
-        if (session()->get('role') !== 'admin') {
-            return redirect()->to('/');
-        }
-
         if (!preg_match('/\A[A-Za-z0-9_-]+\z/', $id)) {
             return redirect()->to('/admin/kasir/list')->with('error', 'ID kasir tidak valid.');
         }
@@ -165,10 +145,6 @@ class Kasir extends BaseController
 
     public function delete($id)
     {
-        if (session()->get('role') !== 'admin') {
-            return redirect()->to('/');
-        }
-
         $db = \Config\Database::connect();
 
         if ($db->fieldExists('aktif', 'users')) {

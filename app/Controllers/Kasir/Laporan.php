@@ -23,10 +23,6 @@ class Laporan extends BaseController
 
     public function index()
     {
-        if (!in_array(session()->get('role'), ['admin', 'kasir'])) {
-            return redirect()->to('/');
-        }
-
         $db = \Config\Database::connect();
 
         $from = $this->request->getGet('from')
@@ -188,10 +184,6 @@ class Laporan extends BaseController
 
  public function pdf()
 {
-    if (!in_array(session()->get('role'), ['admin', 'kasir'])) {
-        return redirect()->to('/');
-    }
-
     date_default_timezone_set('Asia/Jakarta');
 
     $db = \Config\Database::connect();

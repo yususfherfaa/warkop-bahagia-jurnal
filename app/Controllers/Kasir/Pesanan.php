@@ -9,10 +9,6 @@ class Pesanan extends BaseController
 {
     public function index()
     {
-        if (session()->get('role') !== 'kasir') {
-            return redirect()->to('/');
-        }
-
         $db = \Config\Database::connect();
 
         /* ===============================
