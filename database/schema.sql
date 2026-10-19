@@ -90,7 +90,7 @@ CREATE TABLE `orders` (
   `id_meja` varchar(11) NOT NULL,
   `nama_pelanggan` varchar(100) NOT NULL,
   `total` decimal(12,2) DEFAULT 0.00,
-  `status` enum('sedang_dibuat','menunggu_pembayaran','lunas') DEFAULT 'sedang_dibuat',
+  `status` enum('menunggu_pembayaran','lunas') DEFAULT 'menunggu_pembayaran',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `metode_pembayaran` enum('cash','qris') DEFAULT 'cash',
