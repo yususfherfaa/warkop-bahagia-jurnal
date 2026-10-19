@@ -439,9 +439,9 @@
                         <?php if ($p['stok'] <= 0): ?>
                             <span class="badge-stok stok-habis">Habis</span>
                         <?php elseif ($p['stok'] <= 5): ?>
-                            <span class="badge-stok stok-tipis"><?= $p['stok'] ?> tersisa</span>
+                            <span class="badge-stok stok-tipis"><?= (int) $p['stok'] ?> tersisa</span>
                         <?php else: ?>
-                            <span class="badge-stok stok-aman"><?= $p['stok'] ?></span>
+                            <span class="badge-stok stok-aman"><?= (int) $p['stok'] ?></span>
                         <?php endif; ?>
                     </p>
                     <div class="btn-add-wrap">

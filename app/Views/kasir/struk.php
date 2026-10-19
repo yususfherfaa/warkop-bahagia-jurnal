@@ -162,7 +162,7 @@ td {
         <tr>
             <td>
                 <?= esc($i['nama']) ?><br>
-                <small style="color:#8B6B4F;"><?= $i['qty'] ?> x Rp <?= number_format($i['harga'], 0, ',', '.') ?></small>
+                <small style="color:#8B6B4F;"><?= (int) $i['qty'] ?> x Rp <?= number_format($i['harga'], 0, ',', '.') ?></small>
             </td>
             <td class="text-right">
                 Rp <?= number_format($i['subtotal'], 0, ',', '.') ?>
@@ -179,7 +179,7 @@ td {
             <td class="text-right">Rp <?= number_format($order['total'], 0, ',', '.') ?></td>
         </tr>
         <tr>
-            <td><?= strtoupper($payment['metode_pembayaran'] ?? 'CASH') ?></td>
+            <td><?= esc(strtoupper($payment['metode_pembayaran'] ?? 'CASH')) ?></td>
             <td class="text-right">Rp <?= number_format($payment['uang_dibayar'] ?? 0, 0, ',', '.') ?></td>
         </tr>
         <tr>

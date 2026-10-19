@@ -135,7 +135,7 @@
                 <select name="id_user">
                     <option value="all">Semua Kasir</option>
                     <?php foreach($kasirList as $k): ?>
-                    <option value="<?= $k['id_user'] ?>" <?= ($id_user == $k['id_user']) ? 'selected' : '' ?>>
+                    <option value="<?= esc($k['id_user'], 'attr') ?>" <?= ($id_user == $k['id_user']) ? 'selected' : '' ?>>
                         <?= esc($k['nama_kasir']) ?>
                     </option>
                     <?php endforeach; ?>

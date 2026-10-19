@@ -115,7 +115,7 @@
                         <?php if($p['stok'] <= 0): ?>
                             <span class="badge-stok habis">Habis (0)</span>
                         <?php elseif($p['stok'] <= 5): ?>
-                            <span class="badge-stok menipis">Menipis (<?= $p['stok'] ?>)</span>
+                            <span class="badge-stok menipis">Menipis (<?= (int) $p['stok'] ?>)</span>
                         <?php else: ?>
                             <span class="badge-stok aman">Tersedia</span>
                         <?php endif; ?>

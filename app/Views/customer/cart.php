@@ -185,7 +185,7 @@
                     <td style="text-align:right;">Rp <?= number_format($item['harga'], 0, ',', '.') ?></td>
                     <td style="text-align:center; white-space:nowrap;">
                         <a href="<?= base_url('/cart/qty/'.$id_meja.'/'.$item['key'].'/minus') ?>" class="qty-btn">-</a>
-                        <span style="display:inline-block; width:28px; text-align:center; font-weight:700;"><?= $item['qty'] ?></span>
+                        <span style="display:inline-block; width:28px; text-align:center; font-weight:700;"><?= (int) $item['qty'] ?></span>
                         <a href="<?= base_url('/cart/qty/'.$id_meja.'/'.$item['key'].'/plus') ?>" class="qty-btn">+</a>
                     </td>
                     <td style="text-align:right; font-weight:600;">

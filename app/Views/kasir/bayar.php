@@ -189,8 +189,8 @@
                            name="uang_dibayar"
                            id="uang_dibayar"
                            class="input-pay"
-                           min="<?= $order['total'] ?>"
-                           placeholder="Contoh: <?= $order['total'] ?>"
+                           min="<?= (int) $order['total'] ?>"
+                           placeholder="Contoh: <?= (int) $order['total'] ?>"
                            required
                            autofocus>
                 </div>
@@ -223,7 +223,7 @@
         <?php else: ?>
 
             <form method="post" action="<?= base_url('/kasir/bayar/process/'.$order['id_order']) ?>">
-                <input type="hidden" name="uang_dibayar" value="<?= $order['total'] ?>">
+                <input type="hidden" name="uang_dibayar" value="<?= (int) $order['total'] ?>">
 
                 <div style="padding:var(--sp-5); background:var(--sage-light); border-radius:var(--r-md); color:var(--espresso); border:1px solid var(--sage);">
                     <div style="font-weight:700; color:var(--sage); margin-bottom:4px; font-size:var(--fs-body);">

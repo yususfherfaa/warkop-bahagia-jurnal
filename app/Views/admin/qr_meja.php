@@ -149,19 +149,19 @@
                 </div>
 
                 <div class="qr-image-wrap">
-                    <img src="<?= $qrUrl ?>" alt="QR <?= esc($m['id_meja']) ?>" loading="lazy">
+                    <img src="<?= esc($qrUrl, 'attr') ?>" alt="QR <?= esc($m['id_meja']) ?>" loading="lazy">
                 </div>
 
                 <div class="link-box-beige">
-                    <?= $url ?>
+                    <?= esc($url) ?>
                 </div>
 
                 <div style="display:flex; justify-content:center; gap:6px;">
-                    <a href="<?= $url ?>" target="_blank" class="btn-qr-action btn-view-beige">
+                    <a href="<?= esc($url, 'attr') ?>" target="_blank" class="btn-qr-action btn-view-beige">
                         🔗 Tes Link
                     </a>
 
-                    <a href="<?= $qrUrl ?>" download="<?= $m['id_meja'] ?>.png" class="btn-qr-action btn-download-beige">
+                    <a href="<?= esc($qrUrl, 'attr') ?>" download="<?= esc($m['id_meja'], 'attr') ?>.png" class="btn-qr-action btn-download-beige">
                         ⬇️ Unduh QR
                     </a>
                 </div>

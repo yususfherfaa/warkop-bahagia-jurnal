@@ -66,7 +66,7 @@
             <div>Order ID: <strong>#<?= esc($order['id_order']) ?></strong></div>
             <div style="margin-top:4px;">
                 Status: <span class="badge" style="background:var(--sage); color:#fff; padding:2px 8px; border-radius:var(--r-pill); font-size:11px;">
-                    <?= ucfirst(str_replace('_', ' ', $order['status'])) ?>
+                    <?= esc(ucfirst(str_replace('_', ' ', $order['status']))) ?>
                 </span>
             </div>
             <div style="margin-top:8px; color:var(--taupe); font-size:var(--fs-xs);">
