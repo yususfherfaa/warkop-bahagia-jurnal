@@ -15,6 +15,7 @@ class UserModel extends Model
         'username',
         'password',
         'nama_kasir',
-        'role'
+        'role',
+        'aktif'
     ];
 }

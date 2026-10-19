@@ -14,10 +14,11 @@ class Kasir extends BaseController
 
         $db = \Config\Database::connect();
 
-        $kasir = $db->table('users')
-            ->where('role', 'kasir')
-            ->get()
-            ->getResultArray();
+        $kasirBuilder = $db->table('users')->where('role', 'kasir');
+        if ($db->fieldExists('aktif', 'users')) {
+            $kasirBuilder->where('aktif', 1);
+        }
+        $kasir = $kasirBuilder->get()->getResultArray();
 
         return view('admin/kasir/list', [
             'kasir' => $kasir
@@ -50,23 +51,14 @@ class Kasir extends BaseController
             ->getRowArray();
 
         if ($last) {
-
             $num = (int) substr($last['id_user'], 3);
             $num++;
-
         } else {
-
             $num = 1;
-
         }
 
-        // format ID
-        $id_user = 'USR' . str_pad(
-            $num,
-            3,
-            '0',
-            STR_PAD_LEFT
-        );
+        // seragamkan format ID: USR + 7 digit angka
+        $id_user = 'USR' . str_pad($num, 7, '0', STR_PAD_LEFT);
 
         // insert kasir
         $db->table('users')->insert([
@@ -153,9 +145,15 @@ class Kasir extends BaseController
 
         $db = \Config\Database::connect();
 
-        $db->table('users')
-            ->where('id_user', $id)
-            ->delete();
+        if ($db->fieldExists('aktif', 'users')) {
+            $db->table('users')
+                ->where('id_user', $id)
+                ->update(['aktif' => 0]);
+        } else {
+            $db->table('users')
+                ->where('id_user', $id)
+                ->delete();
+        }
 
         return redirect()->to('/admin/kasir/list');
     }

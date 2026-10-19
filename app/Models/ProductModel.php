@@ -17,6 +17,11 @@ class ProductModel extends Model
         'stok',
         'varian_suhu',
         'tambahan_harga_es',
-        'gambar'
+        'gambar',
+        'suhu_tetap',
+        'punya_opsi',
+        'label_opsi',
+        'deskripsi',
+        'aktif',
     ];
 }
