@@ -136,7 +136,7 @@
 
         <?php if(session()->getFlashdata('error')): ?>
             <div class="alert-error-beige">
-                ⚠ <?= session()->getFlashdata('error') ?>
+                ⚠ <?= esc(session()->getFlashdata('error')) ?>
             </div>
         <?php endif; ?>
 

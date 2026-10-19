@@ -29,6 +29,25 @@ class Menu extends BaseController
         return self::KATEGORI_TETAP;
     }
 
+    private function validateProductForm(): bool
+    {
+        $rules = [
+            'nama' => 'required|max_length[200]',
+            'kategori' => 'required|in_list[' . implode(',', self::KATEGORI_TETAP) . ']',
+            'harga' => 'required|numeric|greater_than_equal_to[0]',
+            'stok' => 'required|integer|greater_than_equal_to[0]',
+            'deskripsi' => 'permit_empty|string|max_length[255]',
+            'tambahan_harga_es' => 'permit_empty|numeric|greater_than_equal_to[0]',
+        ];
+        $gambar = $this->request->getFile('gambar');
+
+        if ($gambar && $gambar->getError() !== UPLOAD_ERR_NO_FILE) {
+            $rules['gambar'] = 'uploaded[gambar]|is_image[gambar]|mime_in[gambar,image/jpeg,image/png,image/webp]|max_size[gambar,2048]';
+        }
+
+        return $this->validate($rules);
+    }
+
     public function index()
     {
         if (!session()->get('logged_in')) {
@@ -64,6 +83,11 @@ class Menu extends BaseController
 
     public function add()
     {
+        if (!$this->validateProductForm()) {
+            return redirect()->back()->withInput()
+                ->with('error', implode(' ', $this->validator->getErrors()));
+        }
+
         $db = \Config\Database::connect();
         $productModel = new ProductModel();
 
@@ -172,6 +196,11 @@ class Menu extends BaseController
 
     public function update($id)
     {
+        if (!$this->validateProductForm()) {
+            return redirect()->back()->withInput()
+                ->with('error', implode(' ', $this->validator->getErrors()));
+        }
+
         $db = \Config\Database::connect();
         $productModel = new ProductModel();
 

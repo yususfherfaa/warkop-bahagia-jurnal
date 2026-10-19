@@ -121,12 +121,12 @@
         <form method="get">
             <div>
                 <label style="display:block; font-size:11px; color:var(--taupe); margin-bottom:2px;">DARI TANGGAL</label>
-                <input type="date" name="from" value="<?= $from ?>">
+                <input type="date" name="from" value="<?= esc($from, 'attr') ?>">
             </div>
 
             <div>
                 <label style="display:block; font-size:11px; color:var(--taupe); margin-bottom:2px;">SAMPAI TANGGAL</label>
-                <input type="date" name="to" value="<?= $to ?>">
+                <input type="date" name="to" value="<?= esc($to, 'attr') ?>">
             </div>
 
             <?php if(session()->get('role') == 'admin'): ?>

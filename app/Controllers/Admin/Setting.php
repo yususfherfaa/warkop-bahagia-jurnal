@@ -27,16 +27,22 @@ class Setting extends BaseController
     public function update()
     {
         $model = new SettingModel();
+        $uploadRules = [];
 
-        $fields = [
-            'nama_warkop',
-            'alamat',
-            'kontak',
-            'server_url',
-        ];
+        foreach (['logo', 'qris'] as $field) {
+            $file = $this->request->getFile($field);
 
-        foreach ($fields as $f) {
+            if ($file && $file->getError() !== UPLOAD_ERR_NO_FILE) {
+                $uploadRules[$field] = "uploaded[{$field}]|is_image[{$field}]|mime_in[{$field},image/jpeg,image/png,image/webp]|max_size[{$field},2048]";
+            }
+        }
 
+        if ($uploadRules && !$this->validate($uploadRules)) {
+            return redirect()->back()->withInput()
+                ->with('error', implode(' ', $this->validator->getErrors()));
+        }
+
+        foreach (['nama_warkop', 'alamat', 'kontak', 'server_url'] as $f) {
             $value = $this->request->getPost($f);
 
             $existing = $model
@@ -76,13 +82,9 @@ class Setting extends BaseController
         $file = $this->request->getFile('logo');
 
         if ($file && $file->isValid() && !$file->hasMoved()) {
-
             $namaFile = $file->getRandomName();
-
             $file->move(ROOTPATH . 'public/uploads', $namaFile);
-
             $pathLogo = 'uploads/' . $namaFile;
-
             $existingLogo = $model
                 ->where('nama', 'logo')
                 ->first();
@@ -116,20 +118,28 @@ $model->insert([
             $qris = $this->request->getFile('qris');
 
         if ($qris && $qris->isValid() && !$qris->hasMoved()) {
+                $namaFile = $qris->getRandomName();
+                $qris->move(FCPATH . 'uploads', $namaFile);
+                $pathQris = 'uploads/' . $namaFile;
+                $existingQris = $model->where('nama', 'qris')->first();
 
-            $namaFile = 'qris.png';
-
-            $qris->move(
-            FCPATH.'uploads',
-            $namaFile,
-            true
-            );
-
+                if ($existingQris) {
+                    $model->update($existingQris['id_setting'], ['value' => $pathQris]);
+                } else {
+                    $last = $model->orderBy('id_setting', 'DESC')->first();
+                    $next = $last ? ((int) substr($last['id_setting'], 3) + 1) : 1;
+                    $idSetting = 'SET' . str_pad($next, 3, '0', STR_PAD_LEFT);
+                    $model->insert([
+                        'id_setting' => $idSetting,
+                        'nama' => 'qris',
+                        'value' => $pathQris,
+                    ]);
+                }
             }
 
             return redirect()
-            ->to('/admin/settings')
-            ->with('success', 'Settings berhasil disimpan');
+                ->to('/admin/settings')
+                ->with('success', 'Settings berhasil disimpan');
     }
 
     public function qrMeja()

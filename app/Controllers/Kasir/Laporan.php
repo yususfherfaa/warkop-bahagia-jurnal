@@ -7,6 +7,20 @@ use FPDF;
 
 class Laporan extends BaseController
 {
+    private function isValidDate(mixed $value): bool
+    {
+        if (!is_string($value) || !preg_match('/\A\d{4}-\d{2}-\d{2}\z/', $value)) {
+            return false;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+        $errors = \DateTimeImmutable::getLastErrors();
+
+        return $date !== false
+            && $date->format('Y-m-d') === $value
+            && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0));
+    }
+
     public function index()
     {
         if (!in_array(session()->get('role'), ['admin', 'kasir'])) {
@@ -20,6 +34,10 @@ class Laporan extends BaseController
 
         $to = $this->request->getGet('to')
             ?? date('Y-m-d');
+
+        if (!$this->isValidDate($from) || !$this->isValidDate($to) || $from > $to) {
+            return $this->response->setStatusCode(400)->setBody('Rentang tanggal laporan tidak valid.');
+        }
 
         $id_user = $this->request->getGet('id_user')
             ?? 'all';
@@ -180,6 +198,10 @@ class Laporan extends BaseController
 
     $from = $this->request->getGet('from') ?? date('Y-m-01');
     $to   = $this->request->getGet('to') ?? date('Y-m-d');
+
+    if (!$this->isValidDate($from) || !$this->isValidDate($to) || $from > $to) {
+        return $this->response->setStatusCode(400)->setBody('Rentang tanggal laporan tidak valid.');
+    }
 
     $id_user = $this->request->getGet('id_user') ?? 'all';
 

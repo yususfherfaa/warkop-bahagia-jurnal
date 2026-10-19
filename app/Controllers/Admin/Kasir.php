@@ -40,6 +40,15 @@ class Kasir extends BaseController
             return redirect()->to('/');
         }
 
+        if (!$this->validate([
+            'nama' => 'required|max_length[100]',
+            'username' => 'required|alpha_numeric_punct|min_length[3]|max_length[50]|is_unique[users.username]',
+            'password' => 'required|min_length[8]|max_length[255]',
+        ])) {
+            return redirect()->back()->withInput()
+                ->with('error', implode(' ', $this->validator->getErrors()));
+        }
+
         $db = \Config\Database::connect();
 
         // ambil ID terakhir
@@ -107,6 +116,19 @@ class Kasir extends BaseController
     {
         if (session()->get('role') !== 'admin') {
             return redirect()->to('/');
+        }
+
+        if (!preg_match('/\A[A-Za-z0-9_-]+\z/', $id)) {
+            return redirect()->to('/admin/kasir/list')->with('error', 'ID kasir tidak valid.');
+        }
+
+        if (!$this->validate([
+            'nama' => 'required|max_length[100]',
+            'username' => "required|alpha_numeric_punct|min_length[3]|max_length[50]|is_unique[users.username,id_user,{$id}]",
+            'password' => 'permit_empty|min_length[8]|max_length[255]',
+        ])) {
+            return redirect()->back()->withInput()
+                ->with('error', implode(' ', $this->validator->getErrors()));
         }
 
         $db = \Config\Database::connect();
