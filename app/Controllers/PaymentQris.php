@@ -15,9 +15,27 @@ class PaymentQris extends BaseController
             ->get()
             ->getRowArray();
 
+        if (!$order) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Pesanan tidak ditemukan.');
+        }
+
+        $providedToken = (string) $this->request->getGet('token');
+        $sessionToken = (string) session()->get('order_access_' . $id_order);
+        if (!hash_equals((string) $order['token'], $providedToken) && !hash_equals((string) $order['token'], $sessionToken)) {
+            return $this->response->setStatusCode(403)->setBody('Akses pesanan tidak valid.');
+        }
+
+        $merchantName = trim((string) (setting('nama_warkop') ?? 'Warkop Bahagia'));
+        $merchantAddress = trim((string) (setting('alamat') ?? 'Bekasi Utara'));
+        $qris = trim((string) (setting('qris') ?? 'uploads/qris-placeholder.svg'));
+
         return view('customer/payment_qris', [
             'order' => $order,
-            'id_meja' => $id_meja
+            'id_meja' => $id_meja,
+            'merchant_name' => $merchantName ?: 'Warkop Bahagia',
+            'merchant_address' => $merchantAddress ?: 'Bekasi Utara',
+            'qris' => $qris ?: 'uploads/qris-placeholder.svg',
+            'order_token' => $order['token'],
         ]);
     }
 }

@@ -60,6 +60,7 @@ class Menu extends BaseController
 
         $db = \Config\Database::connect();
         $productModel = new ProductModel();
+
         $settingModel = new SettingModel();
 
         $settings = [];
@@ -112,17 +113,17 @@ class Menu extends BaseController
         $file = $this->request->getFile('gambar');
         $gambar = null;
 
+        if (!$db->transBegin()) {
+            return redirect()->back()->with('error', 'Menu gagal disimpan. Silakan coba lagi.');
+        }
+
         if ($file && $file->isValid() && !$file->hasMoved()) {
             $gambar = $file->getRandomName();
             $file->move(FCPATH . 'uploads', $gambar);
         }
 
         // Generate ID Produk
-        $lastProduk = $db->table('products')
-            ->select('id_produk')
-            ->orderBy('id_produk', 'DESC')
-            ->get(1)
-            ->getRowArray();
+        $lastProduk = $db->query('SELECT id_produk FROM products ORDER BY id_produk DESC LIMIT 1 FOR UPDATE')->getRowArray();
 
         if ($lastProduk) {
             $num = (int) substr($lastProduk['id_produk'], 3) + 1;
@@ -133,7 +134,7 @@ class Menu extends BaseController
         $id_produk = 'PRD' .
             str_pad($num, 7, '0', STR_PAD_LEFT);
 
-        $productModel->insert([
+        $inserted = $productModel->insert([
             'id_produk' => $id_produk,
             'nama'      => $this->request->getPost('nama'),
             'deskripsi' => $deskripsi !== '' ? $deskripsi : null,
@@ -149,11 +150,7 @@ class Menu extends BaseController
         ]);
 
         // Log aktivitas
-        $lastData = $db->table('data_products')
-            ->select('id_data')
-            ->orderBy('id_data', 'DESC')
-            ->get(1)
-            ->getRowArray();
+        $lastData = $db->query('SELECT id_data FROM data_products ORDER BY id_data DESC LIMIT 1 FOR UPDATE')->getRowArray();
 
         $numData = $lastData
             ? ((int) substr($lastData['id_data'], 3) + 1)
@@ -162,13 +159,18 @@ class Menu extends BaseController
         $id_data = 'DAT' .
             str_pad($numData, 7, '0', STR_PAD_LEFT);
 
-        $db->table('data_products')->insert([
+        $logged = $db->table('data_products')->insert([
             'id_data'      => $id_data,
             'aktivitas'    => 'Tambah Produk',
             'id_produk'    => $id_produk,
             'nama_produk'  => $this->request->getPost('nama'),
             'nama_kasir'   => session()->get('nama_kasir')
         ]);
+
+        if (!$inserted || !$logged || !$db->transStatus() || !$db->transCommit()) {
+            $db->transRollback();
+            return redirect()->back()->withInput()->with('error', 'Menu gagal disimpan. Silakan coba lagi.');
+        }
 
         return redirect()->to('/kasir/menu');
     }
@@ -233,6 +235,10 @@ class Menu extends BaseController
             'suhu_tetap' => $suhuTetap !== '' ? $suhuTetap : null,
         ];
 
+        if (!$db->transBegin()) {
+            return redirect()->back()->with('error', 'Menu gagal diperbarui. Silakan coba lagi.');
+        }
+
         $file = $this->request->getFile('gambar');
 
         if ($file && $file->isValid() && !$file->hasMoved()) {
@@ -241,13 +247,9 @@ class Menu extends BaseController
             $data['gambar'] = $gambar;
         }
 
-        $productModel->update($id, $data);
+        $updated = $productModel->update($id, $data);
 
-        $lastData = $db->table('data_products')
-            ->select('id_data')
-            ->orderBy('id_data', 'DESC')
-            ->get(1)
-            ->getRowArray();
+        $lastData = $db->query('SELECT id_data FROM data_products ORDER BY id_data DESC LIMIT 1 FOR UPDATE')->getRowArray();
 
         $numData = $lastData
             ? ((int) substr($lastData['id_data'], 3) + 1)
@@ -256,13 +258,18 @@ class Menu extends BaseController
         $id_data = 'DAT' .
             str_pad($numData, 7, '0', STR_PAD_LEFT);
 
-        $db->table('data_products')->insert([
+        $logged = $db->table('data_products')->insert([
             'id_data'      => $id_data,
             'aktivitas'    => 'Edit Produk',
             'id_produk'    => $id,
             'nama_produk'  => $this->request->getPost('nama'),
             'nama_kasir'   => session()->get('nama_kasir')
         ]);
+
+        if (!$updated || !$logged || !$db->transStatus() || !$db->transCommit()) {
+            $db->transRollback();
+            return redirect()->back()->withInput()->with('error', 'Menu gagal diperbarui. Silakan coba lagi.');
+        }
 
         return redirect()->to('/kasir/menu');
     }
@@ -280,11 +287,7 @@ class Menu extends BaseController
             $produk = $productModel->find($id);
 
             if ($produk) {
-                $lastData = $db->table('data_products')
-                    ->select('id_data')
-                    ->orderBy('id_data', 'DESC')
-                    ->get(1)
-                    ->getRowArray();
+                $lastData = $db->query('SELECT id_data FROM data_products ORDER BY id_data DESC LIMIT 1 FOR UPDATE')->getRowArray();
 
                 $numData = $lastData
                     ? ((int) substr($lastData['id_data'], 3) + 1)

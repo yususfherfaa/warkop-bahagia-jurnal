@@ -54,16 +54,35 @@ class Bayar extends BaseController
         $orderModel = new OrderModel();
         $paymentModel = new PaymentModel();
 
-        $order = $orderModel->find($id_order);
+        $db = \Config\Database::connect();
+        if (!$db->transBegin()) {
+            log_message('error', 'Payment transaction could not start for order {orderId}.', ['orderId' => $id_order]);
+            return redirect()->back()->with('error', 'Pembayaran gagal diproses. Silakan coba lagi.');
+        }
+
+        $order = $db->query(
+            'SELECT * FROM orders WHERE id_order = ? FOR UPDATE',
+            [$id_order]
+        )->getRowArray();
 
         if (!$order) {
+            $db->transRollback();
             return 'Pesanan tidak ditemukan';
+        }
+
+        $existingPayment = $paymentModel
+            ->where('id_order', $id_order)
+            ->first();
+        if ($existingPayment) {
+            $db->transRollback();
+            return redirect()->to('/kasir/struk/' . $id_order);
         }
 
         $uang_dibayar = (int)$this->request->getPost('uang_dibayar');
         $total_order  = (int)$order['total'];
 
         if ($uang_dibayar < $total_order) {
+            $db->transRollback();
             return redirect()->back()->with('error', 'Uang dibayar kurang');
         }
 
@@ -71,7 +90,7 @@ class Bayar extends BaseController
 
         $paymentId = $this->generateIdPay();
 
-        $paymentModel->insert([
+        $inserted = $paymentModel->insert([
             'id_pay' => $paymentId,
             'id_order' => $id_order,
             'id_user' => session()->get('id_user'),
@@ -82,10 +101,23 @@ class Bayar extends BaseController
             'nama_kasir' => session()->get('nama_kasir')
         ]);
 
-       $orderModel->update($id_order, [
-    'status' => 'lunas',
-    'id_pay' => $paymentId
-]);
+        if (!$inserted || !$db->transStatus()) {
+            $db->transRollback();
+            log_message('error', 'Payment record could not be saved for order {orderId}.', ['orderId' => $id_order]);
+            return redirect()->back()->with('error', 'Pembayaran gagal disimpan. Silakan coba lagi.');
+        }
+
+        if (!$orderModel->update($id_order, ['status' => 'lunas']) || !$db->transStatus()) {
+            $db->transRollback();
+            log_message('error', 'Paid status could not be saved for order {orderId}.', ['orderId' => $id_order]);
+            return redirect()->back()->with('error', 'Status pembayaran gagal diperbarui. Silakan coba lagi.');
+        }
+
+        if (!$db->transCommit()) {
+            $db->transRollback();
+            log_message('error', 'Payment transaction could not commit for order {orderId}.', ['orderId' => $id_order]);
+            return redirect()->back()->with('error', 'Pembayaran gagal disimpan. Silakan coba lagi.');
+        }
 
         return redirect()->to('/kasir/struk/' . $id_order);
     }
@@ -95,12 +127,7 @@ class Bayar extends BaseController
     $db = \Config\Database::connect();
     $builder = $db->table('payments');
 
-    $last = $builder
-        ->select('id_pay')
-        ->orderBy('id_pay', 'DESC')
-        ->limit(1)
-        ->get()
-        ->getRowArray();
+    $last = $db->query('SELECT id_pay FROM payments ORDER BY id_pay DESC LIMIT 1 FOR UPDATE')->getRowArray();
 
     if (!$last) {
         return 'PAY000001';

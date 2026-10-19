@@ -9,7 +9,7 @@ class OrderSuccess extends BaseController
     public function index($id_order = null, $id_meja = null)
     {
         if (!$id_order) {
-            die('Order tidak valid');
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Order tidak valid.');
         }
 
         $db = \Config\Database::connect();
@@ -21,7 +21,13 @@ class OrderSuccess extends BaseController
             ->getRowArray();
 
         if (!$order) {
-            die('Pesanan tidak ditemukan');
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Pesanan tidak ditemukan.');
+        }
+
+        $providedToken = (string) $this->request->getGet('token');
+        $sessionToken = (string) session()->get('order_access_' . $id_order);
+        if (!hash_equals((string) $order['token'], $providedToken) && !hash_equals((string) $order['token'], $sessionToken)) {
+            return $this->response->setStatusCode(403)->setBody('Akses pesanan tidak valid.');
         }
 
         // ambil item
@@ -36,7 +42,8 @@ class OrderSuccess extends BaseController
 
             'items'     => $items,
 
-            'id_meja'   => $id_meja
+            'id_meja'   => $id_meja,
+            'order_token' => $order['token'],
         ]);
     }
 }

@@ -103,11 +103,11 @@ if (window.WarkopConfetti) {
 
 // Polling status jika sedang menunggu pembayaran
 setInterval(function(){
-    fetch("<?= base_url('cek-status/'.$order['id_order']) ?>")
+    fetch("<?= base_url('cek-status/'.$order['id_order']) ?>?token=<?= esc($order_token, 'url') ?>")
     .then(response => response.json())
     .then(data => {
         if(data.status == 'lunas'){
-            window.location.href = "<?= base_url('order-success/'.$order['id_order'].'/'.$id_meja) ?>";
+            window.location.href = "<?= base_url('order-success/'.$order['id_order'].'/'.$id_meja) ?>?token=<?= esc($order_token, 'url') ?>";
         }
     })
     .catch(err => {});

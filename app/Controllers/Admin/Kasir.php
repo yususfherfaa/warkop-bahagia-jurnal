@@ -51,13 +51,12 @@ class Kasir extends BaseController
 
         $db = \Config\Database::connect();
 
+        if (!$db->transBegin()) {
+            return redirect()->back()->with('error', 'Kasir gagal disimpan. Silakan coba lagi.');
+        }
+
         // ambil ID terakhir
-        $last = $db->table('users')
-            ->select('id_user')
-            ->like('id_user', 'USR')
-            ->orderBy('id_user', 'DESC')
-            ->get()
-            ->getRowArray();
+        $last = $db->query("SELECT id_user FROM users WHERE id_user LIKE 'USR%' ORDER BY id_user DESC LIMIT 1 FOR UPDATE")->getRowArray();
 
         if ($last) {
             $num = (int) substr($last['id_user'], 3);
@@ -70,7 +69,7 @@ class Kasir extends BaseController
         $id_user = 'USR' . str_pad($num, 7, '0', STR_PAD_LEFT);
 
         // insert kasir
-        $db->table('users')->insert([
+        $inserted = $db->table('users')->insert([
 
             'id_user'     => $id_user,
 
@@ -85,6 +84,11 @@ class Kasir extends BaseController
 
             'role'        => 'kasir'
         ]);
+
+        if (!$inserted || !$db->transStatus() || !$db->transCommit()) {
+            $db->transRollback();
+            return redirect()->back()->withInput()->with('error', 'Kasir gagal disimpan. Silakan coba lagi.');
+        }
 
         return redirect()->to('/admin/kasir/list');
     }
