@@ -338,6 +338,7 @@
 
     <!-- ══ WIDGET REKOMENDASI AI ═══════════════════════════════ -->
     <div class="rekomendasi-section reveal" id="rekomendasiBox">
+        <form id="recommendationLogCsrf" hidden><?= csrf_field() ?></form>
         <div class="rekomendasi-header">
             <div class="icon" id="rekomendasiEmoji">⏳</div>
             <div class="info">
@@ -650,6 +651,7 @@ function getSegmenByHour(h) {
     };
 
     function renderRekomendasi(data) {
+        window.recommendationLogId = data && data.log_id ? data.log_id : null;
         var grid        = document.getElementById('rekomendasiGrid');
         var loading     = document.getElementById('rekomendasiLoading');
         var emoji       = document.getElementById('rekomendasiEmoji');
@@ -866,6 +868,43 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(function() { bar.classList.add('show'); }, 500);
     }
 });
+</script>
+
+<script>
+(function() {
+    var activeRecommendationProductId = null;
+    var activeRecommendationLogId = null;
+    function sendRecommendationSelection(productId, logId) {
+        if (!logId || !productId) return;
+        var token = document.querySelector('#recommendationLogCsrf input[type="hidden"]');
+        if (!token) return;
+        var body = new URLSearchParams();
+        body.set('log_id', String(logId));
+        body.set('id_produk', String(productId));
+        body.set(token.name, token.value);
+        fetch('<?= base_url('recommendation-log/select') ?>', {
+            method: 'POST', credentials: 'same-origin',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: body.toString(), keepalive: true
+        }).catch(function() {});
+    }
+
+    document.addEventListener('click', function(event) {
+        var picker = event.target.closest && event.target.closest('#rekomendasiGrid button[onclick^="openOptionSheet("], #groupSheetBody button[onclick^="openOptionSheet("]');
+        if (picker) {
+            var match = (picker.getAttribute('onclick') || '').match(/openOptionSheet\('([A-Za-z0-9_-]{1,32})'\)/);
+            if (match) {
+                activeRecommendationProductId = match[1];
+                activeRecommendationLogId = window.recommendationLogId;
+            }
+        }
+        var link = event.target.closest && event.target.closest('#rekomendasiGrid a[data-add-id], #groupSheetBody a[data-add-id]');
+        if (link) sendRecommendationSelection(link.dataset.addId, window.recommendationLogId);
+        if (event.target.closest && event.target.closest('#addVariantButton')) {
+            sendRecommendationSelection(activeRecommendationProductId, activeRecommendationLogId);
+        }
+    }, true);
+})();
 </script>
 
 </body>

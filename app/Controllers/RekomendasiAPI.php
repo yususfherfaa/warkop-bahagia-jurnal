@@ -20,6 +20,42 @@ use App\Controllers\BaseController;
  */
 class RekomendasiAPI extends BaseController
 {
+    /** Simpan satu impression secara best-effort; kegagalan tidak memutus rekomendasi. */
+    private function logRecommendation(array $data): ?int
+    {
+        try {
+            $ids = [];
+            $collect = static function (array $items) use (&$collect, &$ids): void {
+                foreach ($items as $item) {
+                    if (($item['tipe'] ?? '') === 'kelompok') {
+                        $collect($item['anggota'] ?? []);
+                    } elseif (!empty($item['id_produk'])) {
+                        $ids[] = (string) $item['id_produk'];
+                    }
+                }
+            };
+            $collect($data['rekomendasi'] ?? []);
+            $ids = array_values(array_unique($ids));
+            if ($ids === []) {
+                return null;
+            }
+
+            $db = \Config\Database::connect();
+            $inserted = $db->table('recommendation_logs')->insert([
+                'jam' => max(0, min(23, (int) ($data['jam'] ?? date('G')))),
+                'source' => substr((string) ($data['source'] ?? 'unknown'), 0, 64),
+                'menu_ditampilkan' => json_encode($ids, JSON_UNESCAPED_SLASHES),
+            ]);
+            if (!$inserted) {
+                return null;
+            }
+            return (int) $db->insertID() ?: null;
+        } catch (\Throwable $e) {
+            log_message('warning', 'Pencatatan impression rekomendasi dilewati: {message}', ['message' => $e->getMessage()]);
+            return null;
+        }
+    }
+
     /**
      * Ambil rekomendasi menu berdasarkan jam real-time atau query parameter (?jam=X).
      */
@@ -199,6 +235,8 @@ class RekomendasiAPI extends BaseController
             $hasil['data']['rekomendasi'] = $this->formatKategoriRekomendasi($hasil['data']['rekomendasi'], $hasil['data']['segmen'] ?? null);
         }
 
+        $hasil['data']['log_id'] = $this->logRecommendation($hasil['data']);
+
         return $this->response->setJSON($hasil);
     }
 
@@ -268,20 +306,23 @@ class RekomendasiAPI extends BaseController
         $rekomendasi = $this->enrichGambar($rekomendasi);
         $rekomendasi = $this->formatKategoriRekomendasi($rekomendasi, $segmen);
 
+        $data = [
+            'jam' => $jam,
+            'segmen' => $segmen,
+            'emoji' => $emojiSegmen[$segmen],
+            'hari' => $namaHari,
+            'source' => $source,
+            'rentang_segmen' => $rentang,
+            'suhu_default' => $suhuDefault,
+            'total_rekomendasi' => count($rekomendasi),
+            'rekomendasi' => $rekomendasi,
+        ];
+        $data['log_id'] = $this->logRecommendation($data);
+
         return $this->response
             ->setJSON([
                 'status' => 'success',
-                'data'   => [
-                    'jam'                => $jam,
-                    'segmen'             => $segmen,
-                    'emoji'              => $emojiSegmen[$segmen],
-                    'hari'               => $namaHari,
-                    'source'             => $source,
-                    'rentang_segmen'     => $rentang,
-                    'suhu_default'       => $suhuDefault,
-                    'total_rekomendasi'  => count($rekomendasi),
-                    'rekomendasi'        => $rekomendasi,
-                ],
+                'data'   => $data,
             ]);
     }
 }

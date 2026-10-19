@@ -91,6 +91,10 @@ Setiap pembatalan mengunci pesanan dan mengembalikan stok dalam transaksi yang s
 
 Pengelolaan menu dan opsi produk tetap dibatasi untuk role `kasir`, termasuk route opsi yang memakai `RoleFilter`. Admin tidak dapat membuka halaman menu kasir; ini keputusan desain agar pengelolaan katalog harian dilakukan oleh kasir.
 
+### Log penerimaan rekomendasi
+
+PR-20 menambahkan log tanpa nama atau identitas pelanggan. Sebelum mengaktifkannya, tinjau lalu jalankan `database/migrasi_recommendation_logs.sql` secara manual. Jika tabel belum ada atau pencatatan gagal, rekomendasi dan proses pemesanan tetap berjalan. Admin dapat melihat ringkasan dipilih dibanding ditampilkan per jam melalui `/admin/recommendation-acceptance`.
+
 ### Pengguna database aplikasi
 
 Buat pengguna khusus aplikasi, bukan `root`. Jalankan perintah berikut melalui klien MariaDB/MySQL sebagai administrator database, ganti placeholder kata sandi, dan batasi haknya ke database aplikasi:

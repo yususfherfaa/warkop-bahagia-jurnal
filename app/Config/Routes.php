@@ -71,6 +71,7 @@ $routes->get('/laporan-stok/pdf', 'Admin\LaporanStok::pdf', ['filter' => ['auth'
 
 $routes->group('admin', ['filter' => ['auth', 'role:admin']], static function ($routes) {
     $routes->get('dashboard', 'Admin\Dashboard::index');
+    $routes->get('recommendation-acceptance', 'Admin\RecommendationAcceptance::index');
 
     $routes->get('kasir', 'Admin\Kasir::index');
     $routes->get('kasir/list', 'Admin\Kasir::index');
@@ -117,3 +118,4 @@ $routes->get('/api/rekomendasi', 'RekomendasiAPI::index');
 // Rekomendasi berdasarkan jam tertentu (untuk testing)
 // Contoh: /api/rekomendasi/jam/8  → rekomendasi pagi
 $routes->get('/api/rekomendasi/jam/(:num)', 'RekomendasiAPI::byJam/$1');
+$routes->post('/recommendation-log/select', 'RecommendationLog::select', ['filter' => 'csrf']);

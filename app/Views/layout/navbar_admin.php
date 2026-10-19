@@ -158,6 +158,11 @@ $logoWarkop = setting('logo') ?? 'uploads/default-logo.png';
             📦 Laporan Stok
         </a>
 
+        <a href="<?= base_url('admin/recommendation-acceptance') ?>"
+           class="nav-link <?= strpos($current_uri, 'recommendation-acceptance') !== false ? 'active' : '' ?>">
+            Tingkat Penerimaan Rekomendasi
+        </a>
+
         <a href="<?= base_url('admin/settings') ?>"
            class="nav-link <?= strpos($current_uri, 'admin/settings') !== false ? 'active' : '' ?>">
             ⚙️ Pengaturan
