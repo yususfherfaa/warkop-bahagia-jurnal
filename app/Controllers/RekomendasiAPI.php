@@ -21,10 +21,24 @@ use App\Controllers\BaseController;
 class RekomendasiAPI extends BaseController
 {
     /**
-     * Ambil rekomendasi menu berdasarkan jam real-time.
+     * Ambil rekomendasi menu berdasarkan jam real-time atau query parameter (?jam=X).
      */
     public function index()
     {
+        $jamParam = $this->request->getGet('jam');
+        if ($jamParam !== null && $jamParam !== '') {
+            $jam = (int) $jamParam;
+            if ($jam < 0 || $jam > 23) {
+                return $this->response
+                    ->setJSON([
+                        'status'  => 'error',
+                        'message' => 'Jam tidak valid. Gunakan angka 0-23.',
+                    ])
+                    ->setStatusCode(400);
+            }
+            return $this->getRekomendasiByJam($jam);
+        }
+
         return $this->getRekomendasiByJam(null);
     }
 
@@ -59,14 +73,14 @@ class RekomendasiAPI extends BaseController
             if (($it['tipe'] ?? 'menu') === 'kelompok' && !empty($it['anggota'])) {
                 $it['anggota'] = $this->enrichGambar($it['anggota']);
                 $first = $it['anggota'][0];
-                foreach (['id_produk','nama','kategori','harga','gambar','stok','varian_suhu','tambahan_harga_es'] as $key) {
+                foreach (['id_produk','nama','kategori','harga','deskripsi','gambar','stok','varian_suhu','tambahan_harga_es','suhu_tetap','punya_opsi','label_opsi','options'] as $key) {
                     $it[$key] = $first[$key] ?? ($it[$key] ?? null);
                 }
                 continue;
             }
 
             $row = $db->table('products')
-                ->select('nama, kategori, harga, gambar, stok, varian_suhu, tambahan_harga_es')
+                ->select('nama, kategori, harga, deskripsi, gambar, stok, varian_suhu, tambahan_harga_es, suhu_tetap, punya_opsi, label_opsi')
                 ->where('id_produk', $it['id_produk'] ?? '')
                 ->get()->getRowArray();
 
@@ -74,16 +88,74 @@ class RekomendasiAPI extends BaseController
                 $it['nama'] = $row['nama'];
                 $it['kategori'] = $row['kategori'];
                 $it['harga'] = (float) $row['harga'];
+                $it['deskripsi'] = $row['deskripsi'] ?? '';
                 $it['varian_suhu'] = (int) $row['varian_suhu'];
                 $it['tambahan_harga_es'] = (float) $row['tambahan_harga_es'];
+                $it['suhu_tetap'] = $row['suhu_tetap'];
+                $it['punya_opsi'] = (int) $row['punya_opsi'];
+                $it['label_opsi'] = $row['label_opsi'];
+                $it['options'] = $row['punya_opsi']
+                    ? $db->table('product_options')
+                        ->where('id_produk', $it['id_produk'])
+                        ->where('aktif', 1)
+                        ->orderBy('urutan', 'ASC')
+                        ->get()
+                        ->getResultArray()
+                    : [];
             }
             $it['gambar'] = !empty($row['gambar'])
                 ? base_url('uploads/' . $row['gambar'])
-                : base_url('assets/noimage.png');
+                : base_url('assets/no-image.svg');
             $it['stok'] = isset($row['stok']) ? (int) $row['stok'] : null;
         }
         unset($it);
         return $items;
+    }
+
+    private function formatKategoriRekomendasi(array $items, ?string $segmen): array
+    {
+        $produkKopi = ['PRD0000023','PRD0000024','PRD0000025','PRD0000031','PRD0000032','PRD0000033','PRD0000034','PRD0000035','PRD0000036','PRD0000037','PRD0000038','PRD0000039','PRD0000040','PRD0000041'];
+        $produkPanas = ['PRD0000031','PRD0000032','PRD0000033','PRD0000034','PRD0000035','PRD0000036'];
+        $produkDingin = ['PRD0000037','PRD0000038','PRD0000039','PRD0000040','PRD0000041','PRD0000042'];
+        $hasil = [];
+
+        foreach ($items as $item) {
+            if (($item['tipe'] ?? 'menu') === 'kelompok') {
+                $item['anggota'] = $this->formatKategoriRekomendasi($item['anggota'] ?? [], $segmen);
+                if ($item['anggota'] === []) {
+                    continue;
+                }
+                $hasil[] = $item;
+                continue;
+            }
+
+            $id = $item['id_produk'] ?? '';
+            if (in_array($id, ['PRD0000024', 'PRD0000025'], true)) {
+                continue;
+            }
+
+            $kategori = strtolower((string) ($item['kategori'] ?? ''));
+            $isMinuman = str_contains($kategori, 'minuman') || str_contains($kategori, 'kopi') || str_contains($kategori, 'nutrisari');
+            if ($isMinuman) {
+                $suhu = $item['suhu_tetap'] ?? null;
+                if ($suhu === 'dingin') {
+                    $suhu = 'es';
+                }
+                if (!$suhu) {
+                    $suhu = in_array($id, $produkPanas, true) ? 'panas' : (in_array($id, $produkDingin, true) ? 'es' : ($segmen === 'siang' || $segmen === 'malam' ? 'es' : 'panas'));
+                }
+                $item['suhu_default'] = $suhu;
+                $labelSuhu = $suhu === 'es' || $suhu === 'dingin' ? 'Minuman Dingin' : 'Minuman Panas';
+                $labelJenis = str_contains($kategori, 'non kopi')
+                    ? 'Non Kopi'
+                    : (in_array($id, $produkKopi, true) || str_contains($kategori, 'kopi') ? 'Kopi' : 'Non Kopi');
+                $item['kategori_rekomendasi'] = $labelSuhu . ' · ' . $labelJenis;
+            }
+
+            $hasil[] = $item;
+        }
+
+        return $hasil;
     }
 
     /**
@@ -99,6 +171,7 @@ class RekomendasiAPI extends BaseController
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
         curl_setopt($ch, CURLOPT_TIMEOUT, 3);
         $output = curl_exec($ch);
         $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -117,11 +190,10 @@ class RekomendasiAPI extends BaseController
 
         if (isset($hasil['data']['rekomendasi']) && is_array($hasil['data']['rekomendasi'])) {
             $hasil['data']['rekomendasi'] = $this->enrichGambar($hasil['data']['rekomendasi']);
+            $hasil['data']['rekomendasi'] = $this->formatKategoriRekomendasi($hasil['data']['rekomendasi'], $hasil['data']['segmen'] ?? null);
         }
 
-        return $this->response
-            ->setJSON($hasil)
-            ->setHeader('Access-Control-Allow-Origin', '*');
+        return $this->response->setJSON($hasil);
     }
 
     /**
@@ -136,23 +208,31 @@ class RekomendasiAPI extends BaseController
         $namaHari = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'][$hari];
 
         $slotMenu = fn($rank, $id, $suhu = null) => ['peringkat' => $rank, 'tipe' => 'menu', 'id_produk' => $id, 'suhu_default' => $suhu];
-        $slotKelompok = fn($rank, $nama, $ids, $suhu = null) => [
-            'peringkat' => $rank, 'tipe' => 'kelompok', 'nama_kelompok' => $nama, 'nama' => $nama,
-            'anggota' => array_map(fn($id) => ['id_produk' => $id], $ids), 'suhu_default' => $suhu
-        ];
+        $slotKelompok = function ($rank, $nama, $ids, $suhu = null) {
+            $idKopi = ['PRD0000023','PRD0000024','PRD0000025','PRD0000031','PRD0000032','PRD0000033','PRD0000034','PRD0000035','PRD0000036','PRD0000037','PRD0000038','PRD0000039','PRD0000040','PRD0000041'];
+            $isMinuman = str_contains(strtolower($nama), 'minuman') || str_contains(strtolower($nama), 'kopi') || str_contains(strtolower($nama), 'segar');
+            return [
+                'peringkat' => $rank, 'tipe' => 'kelompok', 'nama_kelompok' => $nama, 'nama' => $nama,
+                'anggota' => array_map(fn($id) => [
+                    'id_produk' => $id,
+                    'subkategori' => $isMinuman ? (in_array($id, $idKopi, true) ? 'Kopi' : 'Non Kopi') : null,
+                ], $ids),
+                'suhu_default' => $suhu,
+            ];
+        };
 
         if ($jam >= 5 && $jam <= 10) {
             $segmen = 'pagi'; $suhuDefault = 'panas'; $rentang = '05.00-10.59';
             $rekomendasi = [
                 $slotMenu(1, 'PRD0000026', 'panas'), $slotMenu(2, 'PRD0000027', 'panas'),
                 $slotMenu(3, 'PRD0000028', 'panas'), $slotMenu(4, 'PRD0000029', 'panas'),
-                $slotKelompok(5, 'Kopi & Teh Panas', ['PRD0000024','PRD0000025','PRD0000018'], 'panas'),
+                $slotKelompok(5, 'Minuman Panas', ['PRD0000031','PRD0000032','PRD0000033','PRD0000034','PRD0000035','PRD0000036','PRD0000016','PRD0000017','PRD0000018','PRD0000019','PRD0000021'], 'panas'),
             ];
         } elseif ($jam >= 11 && $jam <= 14) {
             $segmen = 'siang'; $suhuDefault = 'es'; $rentang = '11.00-14.59';
             $rekomendasi = [
                 $slotMenu(1, 'PRD0000030', 'es'), $slotMenu(2, 'PRD0000002', 'es'),
-                $slotKelompok(3, 'Es Segar', ['PRD0000019','PRD0000018','PRD0000017'], 'es'),
+                $slotKelompok(3, 'Minuman Dingin', ['PRD0000037','PRD0000038','PRD0000039','PRD0000040','PRD0000041','PRD0000042','PRD0000016','PRD0000017','PRD0000018','PRD0000019','PRD0000021'], 'es'),
                 $slotKelompok(4, 'Nasi Kucing & Sate-satean', ['PRD0000005','PRD0000013','PRD0000014','PRD0000015']),
                 $slotKelompok(5, 'Gorengan', ['PRD0000009','PRD0000010','PRD0000011']),
             ];
@@ -166,7 +246,7 @@ class RekomendasiAPI extends BaseController
             $segmen = 'malam'; $suhuDefault = 'es'; $rentang = '18.00-04.59';
             $rekomendasi = [
                 $slotMenu(1, 'PRD0000003'), $slotMenu(2, 'PRD0000004'), $slotMenu(3, 'PRD0000001'),
-                $slotKelompok(4, 'Es Kopi & Minuman Manis', ['PRD0000024','PRD0000025','PRD0000023','PRD0000016','PRD0000021'], 'es'),
+                $slotKelompok(4, 'Minuman Dingin', ['PRD0000037','PRD0000038','PRD0000039','PRD0000040','PRD0000041','PRD0000042','PRD0000016','PRD0000017','PRD0000018','PRD0000019','PRD0000021'], 'es'),
                 $slotKelompok(5, 'Gorengan', ['PRD0000009','PRD0000010','PRD0000011']),
             ];
         }
@@ -180,6 +260,7 @@ class RekomendasiAPI extends BaseController
 
         // Enrich gambar & stok dari database
         $rekomendasi = $this->enrichGambar($rekomendasi);
+        $rekomendasi = $this->formatKategoriRekomendasi($rekomendasi, $segmen);
 
         return $this->response
             ->setJSON([
@@ -195,7 +276,6 @@ class RekomendasiAPI extends BaseController
                     'total_rekomendasi'  => count($rekomendasi),
                     'rekomendasi'        => $rekomendasi,
                 ],
-            ])
-            ->setHeader('Access-Control-Allow-Origin', '*');
+            ]);
     }
 }
