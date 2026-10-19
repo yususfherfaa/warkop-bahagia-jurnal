@@ -41,7 +41,9 @@ def rekomendasi():
     hasil = prediksi(jam=jam_val, menit=menit_val)
     return jsonify({
         "status": "success",
-        "data": hasil
+        "data": hasil,
+        "kepercayaan": hasil['kepercayaan'],
+        "n_tetangga": hasil['n_tetangga']
     })
 
 if __name__ == '__main__':

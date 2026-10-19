@@ -35,6 +35,11 @@ _model_knn = _artifacts['model']
 _k = _artifacts['k']
 _y_train = _artifacts['y_train']
 _global_counts = _artifacts['global_counts']
+_train_hours = (
+    _artifacts.get('train_hours')
+    if 'train_hours' in _artifacts
+    else (np.arctan2(_artifacts['X_train'][:, 0], _artifacts['X_train'][:, 1]) % (2.0 * np.pi)) * 24.0 / (2.0 * np.pi)
+)
 
 # Katalog nama produk & kategori
 KATALOG = {
@@ -116,6 +121,12 @@ def prediksi(jam: int = None, menit: int = None) -> dict:
     neighbor_menus = _y_train[indices[0]]
     counts = Counter(neighbor_menus)
 
+    # Kepercayaan mengukur banyaknya seluruh baris latih dalam jendela waktu
+    # ±1 jam (melingkar melewati tengah malam), bukan hanya tetangga KNN.
+    distance_hours = np.abs(_train_hours - (t % 24.0))
+    distance_hours = np.minimum(distance_hours, 24.0 - distance_hours)
+    kepercayaan = int(np.count_nonzero(distance_hours <= 1.0))
+
     # Tie-break: jumlah kemunculan (desc), frekuensi global (desc), ID asc
     sorted_menus = sorted(
         counts.keys(),
@@ -147,6 +158,8 @@ def prediksi(jam: int = None, menit: int = None) -> dict:
         'emoji': EMOJI.get(segmen, '☕'),
         'hari': HARI[hari_idx],
         'is_weekend': bool(is_weekend),
+        'kepercayaan': kepercayaan,
+        'n_tetangga': int(_k),
         'total_rekomendasi': len(rekomendasi_items),
         'rekomendasi': rekomendasi_items,
         'source': 'knn-waktu'

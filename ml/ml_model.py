@@ -37,6 +37,10 @@ import joblib
 
 BASE_ML = os.path.dirname(os.path.abspath(__file__))
 
+# Jaga nilai ini selaras dengan Config\\Recommendation::LOW_CONFIDENCE_THRESHOLD.
+# Ambang 150 didasarkan pada sebaran data latih; bukan hasil optimasi metrik.
+LOW_CONFIDENCE_THRESHOLD = 150
+
 # ── 1. LOAD DATASET ───────────────────────────────────────────────────────────
 print("=" * 65)
 print("  PIPELINE ML REKOMENDASI WARKOP BAHAGIA (PR-01)")
@@ -177,6 +181,7 @@ model_artifacts = {
     'y_train': y_train,
     'global_counts': global_counts,
     'all_menus': all_menus,
+    'train_hours': (train_df['jam'].values + train_df['menit'].values / 60.0) % 24.0,
 }
 model_joblib_path = os.path.join(BASE_ML, 'model_knn.joblib')
 joblib.dump(model_artifacts, model_joblib_path)
@@ -240,10 +245,21 @@ for (day, hr), grp in test_contexts:
     sorted_knn = sorted(c_neigh.keys(), key=lambda m: (c_neigh[m], global_counts[m], -int(m[3:])), reverse=True)
     top5_knn = sorted_knn[:5]
 
+    query_hour = float(hr) + 0.5
+    distance_hours = np.abs((train_df['jam'].values + train_df['menit'].values / 60.0) - query_hour)
+    distance_hours = np.minimum(distance_hours, 24.0 - distance_hours)
+    kepercayaan = int(np.count_nonzero(distance_hours <= 1.0))
+    top5_knn_fallback = (
+        get_rule_manual(hr)
+        if kepercayaan < LOW_CONFIDENCE_THRESHOLD
+        else top5_knn
+    )
+
     top5_rand = list(rng_eval.choice(all_menus, size=5, replace=False))
 
     methods_dict = {
         'KNN': top5_knn,
+        'KNN + fallback jam sepi': top5_knn_fallback,
         'Terlaris Jam': top5_per_jam[hr],
         'Terlaris Segmen': top5_per_segmen[get_segmen(hr)],
         'Rule Manual': get_rule_manual(hr),
@@ -251,7 +267,7 @@ for (day, hr), grp in test_contexts:
         'Acak': top5_rand,
     }
 
-    rec = {'hari_ke': day, 'jam': hr, 'n_rel': n_rel, 'top5_knn': top5_knn}
+    rec = {'hari_ke': day, 'jam': hr, 'n_rel': n_rel, 'top5_knn': top5_knn, 'kepercayaan': kepercayaan}
     for m_name, m_items in methods_dict.items():
         hits = len(set(m_items) & rel_menus)
         rec[f'p5_{m_name}'] = hits / 5.0
@@ -265,7 +281,7 @@ n_contexts = len(eval_df)
 print(f"      Total konteks uji yang dievaluasi: {n_contexts}")
 
 # Ringkasan Metrik
-methods_list = ['KNN', 'Terlaris Jam', 'Terlaris Segmen', 'Rule Manual', 'Terlaris Global', 'Acak']
+methods_list = ['KNN', 'KNN + fallback jam sepi', 'Terlaris Jam', 'Terlaris Segmen', 'Rule Manual', 'Terlaris Global', 'Acak']
 summary_metrics = []
 
 for m in methods_list:
@@ -426,6 +442,7 @@ Jumlah Konteks  : {n_contexts} konteks (hari, jam) pada data uji
 Fitur Input     : sin((jam + menit/60)/24 * 2pi), cos((jam + menit/60)/24 * 2pi)
 Algoritma       : NearestNeighbors(algorithm='brute', metric='euclidean')
 Nilai K Optimum : {best_k} (dipilih melalui CV Expanding Window pada K-grid)
+Ambang fallback: {LOW_CONFIDENCE_THRESHOLD} baris dalam jendela ±1 jam; evaluasi gabungan memakai aturan manual yang sama sebagai proksi fallback.
 Target Output   : Top-5 Rekomendasi Menu (Tie-break: Frekuensi Global, lalu ID Produk)
 
 3. HASIL OPTIMASI K (EXPANDING WINDOW CROSS-VALIDATION)
@@ -441,12 +458,19 @@ for k in K_GRID:
 hasil_evaluasi_text += f"""
 4. PERBANDINGAN METODE PADA DATA UJI (EVALUASI PER KONTEKS JAM:30)
 --------------------------------------------------------------------------------
-Metode           | Precision@5 | Recall@5 | Hit Rate@5
------------------+-------------+----------+------------
+Metode                         | Precision@5 | Recall@5 | Hit Rate@5
+-------------------------------+-------------+----------+------------
 """
 
 for _, row in summary_df.iterrows():
-    hasil_evaluasi_text += f"{row['Metode']:<16} | {row['Precision@5']:<11.3f} | {row['Recall@5']:<8.3f} | {row['Hit Rate@5']:<10.3f}\n"
+    hasil_evaluasi_text += f"{row['Metode']:<30} | {row['Precision@5']:<11.3f} | {row['Recall@5']:<8.3f} | {row['Hit Rate@5']:<10.3f}\n"
+
+hasil_evaluasi_text += f"""
+KNN murni tetap dilaporkan terpisah dari kombinasi. Kombinasi memakai aturan manual
+sebagai proksi daftar Top-5 ketika kepercayaan di bawah {LOW_CONFIDENCE_THRESHOLD};
+fallback PHP menampilkan beberapa kelompok menu sehingga evaluasi top-5 berbasis
+daftar ini adalah proksi, bukan simulasi tampilan kelompok secara penuh.
+"""
 
 hasil_evaluasi_text += f"""
 5. UJI SIGNIFIKANSI BOOTSTRAP 95% (2000 ITERASI, SEED 42)

@@ -96,3 +96,21 @@ variasi marjinal karena jam operasional harian tetap mendominasi preferensi menu
   kurang stabil dibandingkan jam sibuk siang/sore karena frekuensi transaksi
   yang lebih rendah pada rentang waktu tersebut.
 ================================================================================
+
+9. EVALUASI PR-19: KNN MURNI DAN KNN + FALLBACK JAM SEPI
+--------------------------------------------------------------------------------
+Ambang: 150 baris dalam jendela melingkar ±1 jam.
+KNN murni (hasil model di atas)          : P@5 = 0.271 | R@5 = 0.249 | Hit Rate@5 = 0.771
+KNN + fallback jam sepi (proksi aturan)  : P@5 = 0.272 | R@5 = 0.247 | Hit Rate@5 = 0.774
+Kepercayaan pada jam 02:30 : 138 baris -> fallback
+Kepercayaan pada jam 12:30 : 897 baris -> KNN
+Konteks uji di bawah ambang: 8 dari 279.
+
+Catatan reproduksibilitas: metrik kombinasi dihitung dari dataset yang sama dengan
+K=200 dan rumus jarak waktu siklis melalui Python standard library karena
+NumPy/scikit-learn tidak tersedia di environment ini. Fallback direpresentasikan
+dengan daftar aturan manual Top-5; hasil ini merupakan proksi untuk fallback
+berbasis kelompok menu di aplikasi. Jalankan ulang ml_model.py pada environment
+dengan dependency lengkap untuk menghasilkan metrik resmi langsung dari pipeline
+(scikit-learn); angka tersebut dapat berbeda karena tie pada jarak tetangga.
+================================================================================

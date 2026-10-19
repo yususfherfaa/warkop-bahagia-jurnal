@@ -188,6 +188,12 @@ class RekomendasiAPI extends BaseController
             return $this->fallbackRuleBased($jam);
         }
 
+        $kepercayaan = $hasil['data']['kepercayaan'] ?? null;
+        if (is_numeric($kepercayaan)
+            && $kepercayaan < \Config\Recommendation::LOW_CONFIDENCE_THRESHOLD) {
+            return $this->fallbackRuleBased($jam, 'rule-based-jam-sepi');
+        }
+
         if (isset($hasil['data']['rekomendasi']) && is_array($hasil['data']['rekomendasi'])) {
             $hasil['data']['rekomendasi'] = $this->enrichGambar($hasil['data']['rekomendasi']);
             $hasil['data']['rekomendasi'] = $this->formatKategoriRekomendasi($hasil['data']['rekomendasi'], $hasil['data']['segmen'] ?? null);
@@ -200,7 +206,7 @@ class RekomendasiAPI extends BaseController
      * Fallback rule-based jika Python/model tidak tersedia.
      * Tetap memberikan rekomendasi tanpa ML.
      */
-    private function fallbackRuleBased($jam = null)
+    private function fallbackRuleBased($jam = null, string $source = 'rule-based')
     {
         $now    = new \DateTime('now', new \DateTimeZone('Asia/Jakarta'));
         $jam    = $jam ?? (int) $now->format('H');
@@ -270,7 +276,7 @@ class RekomendasiAPI extends BaseController
                     'segmen'             => $segmen,
                     'emoji'              => $emojiSegmen[$segmen],
                     'hari'               => $namaHari,
-                    'source'             => 'rule-based',
+                    'source'             => $source,
                     'rentang_segmen'     => $rentang,
                     'suhu_default'       => $suhuDefault,
                     'total_rekomendasi'  => count($rekomendasi),
