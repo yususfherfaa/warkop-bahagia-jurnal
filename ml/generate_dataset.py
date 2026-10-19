@@ -1,18 +1,40 @@
 """
 generate_dataset.py
 ===================
-Membuat dataset sintetis pola pemesanan Warkop Bahagia berdasarkan konteks
-waktu. Data ini sintetis; bobot awal berasal dari pengetahuan pemilik warkop
-dan nantinya bisa diganti data riil dari tabel orders/order_items.
+Generator dataset sintetis pola pemesanan Warkop Bahagia berbasis waktu.
+Dibuat sesuai spesifikasi PR-01 untuk menggantikan dataset lama yang berlabel sirkular.
 
-Output: dataset_warkop.csv
+Parameter Simulasi:
+- Durasi            : 60 hari simulasi mulai 2026-08-03 (Senin) sampai 2026-10-01
+- Seed              : 42 (numpy.random.default_rng(42))
+- Tarif Dasar Jam   : HOUR_RATE = [4,3,2,2,3,8,12,16,15,12,9,11,16,14,9,7,7,8,12,15,16,14,11,7] (24 jam)
+- Pengali Aktivitas : 0.6 untuk hari kerja, 0.6 * 1.25 = 0.75 untuk akhir pekan (Sabtu & Minggu)
+- Jumlah Transaksi  : per (hari, jam) ~ Poisson(lambda)
+- Noise Menu        : Peluang 0.12 seragam dari seluruh 41 menu aktif
+- Bobot Segmen      : Berdasarkan slot pemilik di RekomendasiAPI.php (fallbackRuleBased):
+                      * Bobot slot: [10, 9, 8, 7, 6] sesuai urutan slot 1-5
+                      * Anggota kelompok menu menggunakan bobot slotnya
+                      * Menu lain di luar slot segmen berbobot 1 (dinormalisasi)
+- Batas Segmen      :
+                      * Pagi  : 05.00 - 10.59 (05.00 - 10)
+                      * Siang : 11.00 - 14.59 (11.00 - 14)
+                      * Sore  : 15.00 - 17.59 (15.00 - 17)
+                      * Malam : 18.00 - 04.59 (18.00 - 04)
+- Blending Batas    : Dalam rentang +-30 menit dari batas segmen (05.00, 11.00, 15.00, 18.00):
+                      a = 0.5 * (1 - jarak_menit / 30)
+                      bobot_campuran = (1 - a) * bobot_segmen_saat_ini + a * bobot_segmen_tetangga
+- Qty               : 1-3 porsi (bobot [0.70, 0.20, 0.10])
+- Kolom Output      : tanggal, hari_ke, jam, menit, id_produk, nama_produk, qty, segmen, is_weekend
 """
 
 import os
-import random
+from datetime import datetime, timedelta
+import numpy as np
+import pandas as pd
 
-random.seed(42)
+BASE_ML = os.path.dirname(os.path.abspath(__file__))
 
+# ── 1. DEFINISI KATALOG MENU (41 MENU AKTIF WARKOP BAHAGIA) ───────────────────
 MENU = {
     'PRD0000001': ('Nasi Goreng', 'Makanan Berat', 16000),
     'PRD0000002': ('Indomie Goreng Telor', 'Makanan Berat', 14000),
@@ -43,90 +65,197 @@ MENU = {
     'PRD0000028': ('Lontong Sayur', 'Makanan Berat', 10000),
     'PRD0000029': ('Bubur Ayam', 'Makanan Berat', 12000),
     'PRD0000030': ('Ayam Geprek + Nasi', 'Makanan Berat', 15000),
+    'PRD0000031': ('ABC Susu', 'Kopi Panas', 5000),
+    'PRD0000032': ('Indocafe', 'Kopi Panas', 5000),
+    'PRD0000033': ('Kapal Api Special Mix', 'Kopi Panas', 5000),
+    'PRD0000034': ('Good Day Biasa', 'Kopi Panas', 6000),
+    'PRD0000035': ('Luwak White Coffee', 'Kopi Panas', 5000),
+    'PRD0000036': ('Torabika Creamy Latte', 'Kopi Panas', 6000),
+    'PRD0000037': ('Good Day Freeze', 'Es Kopi', 8000),
+    'PRD0000038': ('Nescafe Ice Roast', 'Es Kopi', 7000),
+    'PRD0000039': ('ABC Klepon', 'Es Kopi', 8000),
+    'PRD0000040': ('Good Day Biasa', 'Es Kopi', 7000),
+    'PRD0000041': ('Tora Cafe', 'Es Kopi', 7000),
+    'PRD0000042': ('Es Nutrisari', 'Es Nutrisari', 5000),
 }
 
-POLA_WAKTU = {
-    'pagi': {
-        'PRD0000026': 9, 'PRD0000027': 9, 'PRD0000028': 8, 'PRD0000029': 8,
-        'PRD0000024': 9, 'PRD0000025': 8, 'PRD0000018': 8,
-        **{pid: 2 for pid in MENU if pid not in {'PRD0000026', 'PRD0000027', 'PRD0000028', 'PRD0000029', 'PRD0000024', 'PRD0000025', 'PRD0000018'}},
-    },
-    'siang': {
-        'PRD0000030': 10, 'PRD0000002': 8, 'PRD0000019': 8, 'PRD0000018': 8,
-        'PRD0000017': 8, 'PRD0000005': 7, 'PRD0000013': 7, 'PRD0000014': 7,
-        'PRD0000015': 7, 'PRD0000009': 7, 'PRD0000010': 7, 'PRD0000011': 7,
-        **{pid: 2 for pid in MENU if pid not in {'PRD0000030', 'PRD0000002', 'PRD0000019', 'PRD0000018', 'PRD0000017', 'PRD0000005', 'PRD0000013', 'PRD0000014', 'PRD0000015', 'PRD0000009', 'PRD0000010', 'PRD0000011'}},
-    },
-    'sore': {
-        'PRD0000006': 9, 'PRD0000007': 8, 'PRD0000008': 8, 'PRD0000012': 8,
-        **{pid: 2 for pid in MENU if pid not in {'PRD0000006', 'PRD0000007', 'PRD0000008', 'PRD0000012'}},
-    },
-    'malam': {
-        'PRD0000003': 10, 'PRD0000004': 8, 'PRD0000001': 8, 'PRD0000024': 8,
-        'PRD0000025': 8, 'PRD0000023': 7, 'PRD0000016': 7, 'PRD0000021': 7,
-        'PRD0000009': 7, 'PRD0000010': 7, 'PRD0000011': 7,
-        **{pid: 2 for pid in MENU if pid not in {'PRD0000003', 'PRD0000004', 'PRD0000001', 'PRD0000024', 'PRD0000025', 'PRD0000023', 'PRD0000016', 'PRD0000021', 'PRD0000009', 'PRD0000010', 'PRD0000011'}},
-    },
+MENU_IDS = list(MENU.keys())
+N_MENUS = len(MENU_IDS)
+
+# ── 2. BOBOT SEGMEN WAKTU BERDASARKAN ATURAN PEMILIK (RekomendasiAPI) ──────────
+# Bobot slot: peringkat 1=10, 2=9, 3=8, 4=7, 5=6. Menu lainnya = 1.
+SLOT_WEIGHTS = [10.0, 9.0, 8.0, 7.0, 6.0]
+
+MINUMAN_PANAS = [
+    'PRD0000031', 'PRD0000032', 'PRD0000033', 'PRD0000034',
+    'PRD0000035', 'PRD0000036', 'PRD0000016', 'PRD0000017',
+    'PRD0000018', 'PRD0000019', 'PRD0000021'
+]
+MINUMAN_DINGIN = [
+    'PRD0000037', 'PRD0000038', 'PRD0000039', 'PRD0000040',
+    'PRD0000041', 'PRD0000042', 'PRD0000016', 'PRD0000017',
+    'PRD0000018', 'PRD0000019', 'PRD0000021'
+]
+NASI_KUCING_SATE = ['PRD0000005', 'PRD0000013', 'PRD0000014', 'PRD0000015']
+GORENGAN = ['PRD0000009', 'PRD0000010', 'PRD0000011']
+
+SEGMEN_SLOTS = {
+    'pagi': [
+        ['PRD0000026'],   # Slot 1: Nasi Kuning (10)
+        ['PRD0000027'],   # Slot 2: Nasi Uduk (9)
+        ['PRD0000028'],   # Slot 3: Lontong Sayur (8)
+        ['PRD0000029'],   # Slot 4: Bubur Ayam (7)
+        MINUMAN_PANAS     # Slot 5: Minuman Panas (6)
+    ],
+    'siang': [
+        ['PRD0000030'],   # Slot 1: Ayam Geprek + Nasi (10)
+        ['PRD0000002'],   # Slot 2: Indomie Goreng Telor (9)
+        MINUMAN_DINGIN,   # Slot 3: Minuman Dingin (8)
+        NASI_KUCING_SATE, # Slot 4: Nasi Kucing & Sate (7)
+        GORENGAN          # Slot 5: Gorengan (6)
+    ],
+    'sore': [
+        ['PRD0000006'],   # Slot 1: Pancong Keju (10)
+        ['PRD0000007'],   # Slot 2: Roti Bakar Coklat (9)
+        ['PRD0000008'],   # Slot 3: Kentang Goreng (8)
+        ['PRD0000012'],   # Slot 4: Dimsum Mentai (7)
+    ],
+    'malam': [
+        ['PRD0000003'],   # Slot 1: Indomie Rebus Telor (10)
+        ['PRD0000004'],   # Slot 2: Bubur Kacang Ijo (9)
+        ['PRD0000001'],   # Slot 3: Nasi Goreng (8)
+        MINUMAN_DINGIN,   # Slot 4: Minuman Dingin (7)
+        GORENGAN          # Slot 5: Gorengan (6)
+    ]
 }
 
+def get_base_segment_weights(segmen: str) -> np.ndarray:
+    w = np.ones(N_MENUS, dtype=float)
+    slots = SEGMEN_SLOTS[segmen]
+    for idx_slot, members in enumerate(slots):
+        weight_val = SLOT_WEIGHTS[idx_slot]
+        for m_id in members:
+            if m_id in MENU_IDS:
+                i = MENU_IDS.index(m_id)
+                w[i] = weight_val
+    return w / np.sum(w)
 
-def jam_ke_segmen(jam: int) -> str:
+SEGMENT_BASE_PROBS = {
+    s: get_base_segment_weights(s) for s in ['pagi', 'siang', 'sore', 'malam']
+}
+
+def jam_menit_ke_segmen(jam: int) -> str:
     if 5 <= jam <= 10:
         return 'pagi'
-    if 11 <= jam <= 14:
+    elif 11 <= jam <= 14:
         return 'siang'
-    if 15 <= jam <= 17:
+    elif 15 <= jam <= 17:
         return 'sore'
-    return 'malam'
+    else:
+        return 'malam'
 
+def hitung_probabilitas_waktu(jam: int, menit: int) -> tuple[np.ndarray, str]:
+    """
+    Menghitung distribusi probabilitas menu untuk jam dan menit tertentu,
+    memperhitungkan pencampuran segmen tetangga jika berada dalam +-30 menit
+    dari batas segmen: 05:00, 11:00, 15:00, 18:00.
+    """
+    segmen_saat_ini = jam_menit_ke_segmen(jam)
+    w_curr = SEGMENT_BASE_PROBS[segmen_saat_ini]
 
-def label_rekomendasi(id_produk: str, segmen: str) -> int:
-    return 1 if POLA_WAKTU[segmen][id_produk] >= 6 else 0
+    # Cek jarak ke 4 batas transisi (dalam menit dari batas)
+    # Batas 05:00 (malam -> pagi)
+    # Batas 11:00 (pagi -> siang)
+    # Batas 15:00 (siang -> sore)
+    # Batas 18:00 (sore -> malam)
+    boundaries = [
+        (5, 0, 'malam', 'pagi'),
+        (11, 0, 'pagi', 'siang'),
+        (15, 0, 'siang', 'sore'),
+        (18, 0, 'sore', 'malam'),
+    ]
 
+    total_menit = jam * 60 + menit
 
-print("Membuat dataset sintetis Warkop Bahagia...")
+    for b_jam, b_menit, seg_sebelum, seg_sesudah in boundaries:
+        b_total = b_jam * 60 + b_menit
+        selisih = total_menit - b_total
+        # tangani kasus batas 05:00 yang melintasi tengah malam jika diperlukan
+        if abs(selisih) <= 30:
+            jarak_menit = abs(selisih)
+            a = 0.5 * (1.0 - (jarak_menit / 30.0))
+            if selisih < 0:
+                # Masih sebelum batas (seg_sebelum) mendekati seg_sesudah
+                w_tetangga = SEGMENT_BASE_PROBS[seg_sesudah]
+            else:
+                # Sudah melewati batas (seg_sesudah) baru lepas dari seg_sebelum
+                w_tetangga = SEGMENT_BASE_PROBS[seg_sebelum]
+            w_campuran = (1.0 - a) * w_curr + a * w_tetangga
+            return (w_campuran / np.sum(w_campuran), segmen_saat_ini)
 
-jam_distribusi = (
-    [6, 7, 7, 8, 8, 8, 9, 9, 10] * 20 +
-    [11, 11, 12, 12, 12, 13, 13, 14] * 30 +
-    [15, 15, 16, 16, 17] * 15 +
-    [18, 18, 19, 19, 20, 20, 21, 22] * 20
-)
+    return (w_curr, segmen_saat_ini)
 
-rows = []
-for id_counter in range(1, 1001):
-    jam = random.choice(jam_distribusi)
-    menit = random.randint(0, 59)
-    segmen = jam_ke_segmen(jam)
-    produk_ids = list(POLA_WAKTU[segmen].keys())
-    bobot = list(POLA_WAKTU[segmen].values())
-    id_produk = random.choices(produk_ids, weights=bobot, k=1)[0]
-    nama, kategori, harga = MENU[id_produk]
-    hari_ke = random.randint(0, 6)
+# ── 3. GENERASI DATASET SINTETIS ───────────────────────────────────────────────
+HOUR_RATE = [4, 3, 2, 2, 3, 8, 12, 16, 15, 12, 9, 11, 16, 14, 9, 7, 7, 8, 12, 15, 16, 14, 11, 7]
+START_DATE = datetime(2026, 8, 3)  # Senin
+N_DAYS = 60
+SEED = 42
 
-    rows.append({
-        'id_transaksi': f'TRX{id_counter:06d}',
-        'jam': jam,
-        'menit': menit,
-        'segmen_waktu': segmen,
-        'hari': hari_ke,
-        'is_weekend': 1 if hari_ke >= 5 else 0,
-        'id_produk': id_produk,
-        'nama_produk': nama,
-        'kategori': kategori,
-        'harga': harga,
-        'qty': random.choices([1, 2, 3], weights=[70, 20, 10], k=1)[0],
-        'label_rekomendasi': label_rekomendasi(id_produk, segmen),
-    })
+def generate_dataset():
+    rng = np.random.default_rng(SEED)
+    rows = []
 
-columns = list(rows[0].keys())
-print(f"\nTotal data        : {len(rows)} baris")
-print(f"Kolom             : {columns}")
+    uniform_prob = np.ones(N_MENUS) / N_MENUS
+    qty_options = [1, 2, 3]
+    qty_probs = [0.70, 0.20, 0.10]
 
-base_ml = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(base_ml, 'dataset_warkop.csv')
-with open(csv_path, 'w', encoding='utf-8', newline='') as fh:
-    fh.write(','.join(columns) + '\n')
-    for row in rows:
-        fh.write(','.join(str(row[col]) for col in columns) + '\n')
-print("\nDataset berhasil disimpan -> dataset_warkop.csv")
+    for hari_ke in range(N_DAYS):
+        tgl = START_DATE + timedelta(days=hari_ke)
+        tgl_str = tgl.strftime('%Y-%m-%d')
+        # 0=Senin ... 5=Sabtu, 6=Minggu
+        is_weekend = 1 if (hari_ke % 7) in (5, 6) else 0
+        mult = 0.6 * (1.25 if is_weekend else 1.0)
+
+        for jam in range(24):
+            lam = HOUR_RATE[jam] * mult
+            n_transaksi = rng.poisson(lam)
+
+            for _ in range(n_transaksi):
+                menit = int(rng.integers(0, 60))
+                prob_menu, segmen = hitung_probabilitas_waktu(jam, menit)
+
+                # Noise 0.12 seragam dari 41 menu
+                if rng.random() < 0.12:
+                    p_pilih = uniform_prob
+                else:
+                    p_pilih = prob_menu
+
+                idx_menu = rng.choice(N_MENUS, p=p_pilih)
+                id_produk = MENU_IDS[idx_menu]
+                nama_produk, _, _ = MENU[id_produk]
+
+                qty = int(rng.choice(qty_options, p=qty_probs))
+
+                rows.append({
+                    'tanggal': tgl_str,
+                    'hari_ke': hari_ke,
+                    'jam': jam,
+                    'menit': menit,
+                    'id_produk': id_produk,
+                    'nama_produk': nama_produk,
+                    'qty': qty,
+                    'segmen': segmen,
+                    'is_weekend': is_weekend,
+                })
+
+    df = pd.DataFrame(rows)
+    output_path = os.path.join(BASE_ML, 'dataset_warkop.csv')
+    df.to_csv(output_path, index=False)
+    print(f"Dataset berhasil dibuat: {len(df):,} baris")
+    print(f"Train (hari 0-47): {len(df[df['hari_ke'] <= 47]):,} baris")
+    print(f"Test  (hari 48-59): {len(df[df['hari_ke'] >= 48]):,} baris")
+    print(f"File tersimpan di: {output_path}")
+    return df
+
+if __name__ == '__main__':
+    generate_dataset()

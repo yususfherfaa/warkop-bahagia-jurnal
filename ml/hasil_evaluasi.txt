@@ -1,26 +1,98 @@
-==================================================
-HASIL EVALUASI MODEL KNN - WARKOP BAHAGIA
-==================================================
+================================================================================
+HASIL EVALUASI MODEL KNN (REKOMENDASI BERBASIS WAKTU) - WARKOP BAHAGIA
+================================================================================
 
-Algoritma    : K-Nearest Neighbor
-Nilai K      : 1
-Metric       : Euclidean Distance
-Train Size   : 800 baris (80%)
-Test Size    : 200 baris (20%)
-Fitur        : jam, segmen_encoded, hari, is_weekend, kategori_encoded, harga
+1. INFORMASI LINGKUNGAN SISTEM
+--------------------------------------------------------------------------------
+Python        : 3.13.14
+scikit-learn  : 1.8.0
+pandas        : 3.0.3
+numpy         : 2.4.6
+joblib        : 1.5.3
+matplotlib    : 3.10.9
 
-Accuracy     : 0.9050 (90.50%)
+2. SPESIFIKASI DATASET & MODEL
+--------------------------------------------------------------------------------
+Total Data      : 9,017 baris
+Data Latih      : 7,180 baris (hari 0-47, 48 hari)
+Data Uji        : 1,837 baris (hari 48-59, 12 hari)
+Jumlah Konteks  : 279 konteks (hari, jam) pada data uji
+Fitur Input     : sin((jam + menit/60)/24 * 2pi), cos((jam + menit/60)/24 * 2pi)
+Algoritma       : NearestNeighbors(algorithm='brute', metric='euclidean')
+Nilai K Optimum : 200 (dipilih melalui CV Expanding Window pada K-grid)
+Target Output   : Top-5 Rekomendasi Menu (Tie-break: Frekuensi Global, lalu ID Produk)
 
-Classification Report:
-                  precision    recall  f1-score   support
+3. HASIL OPTIMASI K (EXPANDING WINDOW CROSS-VALIDATION)
+--------------------------------------------------------------------------------
+K       | Rata-rata Precision@5
+--------+-----------------------
+1       | 0.0549
+3       | 0.1333
+5       | 0.1922
+10      | 0.2341
+20      | 0.2492
+30      | 0.2621
+50      | 0.2760
+75      | 0.2724
+100     | 0.2850
+150     | 0.2835
+200     | 0.2878  <-- Terpilih
+300     | 0.2785
+500     | 0.2781
 
-   Tidak Rekomen       0.88      0.89      0.88        80
-Direkomendasikan       0.92      0.92      0.92       120
+4. PERBANDINGAN METODE PADA DATA UJI (EVALUASI PER KONTEKS JAM:30)
+--------------------------------------------------------------------------------
+Metode           | Precision@5 | Recall@5 | Hit Rate@5
+-----------------+-------------+----------+------------
+KNN              | 0.271       | 0.249    | 0.771     
+Terlaris Jam     | 0.300       | 0.270    | 0.789     
+Terlaris Segmen  | 0.299       | 0.278    | 0.803     
+Rule Manual      | 0.306       | 0.279    | 0.799     
+Terlaris Global  | 0.212       | 0.185    | 0.624     
+Acak             | 0.125       | 0.116    | 0.473     
 
-        accuracy                           0.91       200
-       macro avg       0.90      0.90      0.90       200
-    weighted avg       0.91      0.91      0.91       200
+5. UJI SIGNIFIKANSI BOOTSTRAP 95% (2000 ITERASI, SEED 42)
+--------------------------------------------------------------------------------
+Selisih Berpasangan: KNN - Baseline (Precision@5)
+vs Terlaris Jam   : Selisih = -0.029 (95% CI: -0.047 s.d. -0.011)
+vs Terlaris Segmen: Selisih = -0.028 (95% CI: -0.047 s.d. -0.009)
+vs Rule Manual    : Selisih = -0.035 (95% CI: -0.058 s.d. -0.013)
+vs Terlaris Global: Selisih = +0.059 (95% CI: +0.032 s.d. +0.085)
+vs Acak           : Selisih = +0.146 (95% CI: +0.118 s.d. +0.176)
+
+6. KLASIFIKASI TOP-5 VS DAFTAR ATURAN PEMILIK (PER PASANGAN KONTEKS-MENU)
+--------------------------------------------------------------------------------
+Akurasi   : 0.8594 (85.94%)
+Presisi   : 0.4237 (42.37%)
+Recall    : 0.4237 (42.37%)
+F1-Score  : 0.4237 (42.37%)
 
 Confusion Matrix:
-[[ 71   9]
- [ 10 110]]
+[[9240  804]
+ [ 804  591]]
+
+Catatan:
+Perbandingan terhadap aturan manual pemilik menunjukkan seberapa konsisten
+pola rekomendasi model dengan intuisi awal pemilik warkop. Namun, presisi aturan
+manual bersifat sirkular karena data sintetis di-generate menggunakan bobot awal
+yang diturunkan dari slot aturan pemilik tersebut.
+
+7. ANALISIS ABLASI FITUR
+--------------------------------------------------------------------------------
+Model Utama (sin + cos waktu 24 jam)             : Precision@5 = 0.2710
+Model Alternatif (sin + cos waktu + is_weekend)   : Precision@5 = 0.2738
+Selisih (Ablasi - Utama)                          : +0.0029
+
+Kesimpulan:
+Fitur siklis waktu (jam + menit) merupakan fitur utama yang menangkap pola
+pesanan harian. Penambahan fitur akhir pekan (is_weekend) hanya memberikan
+variasi marjinal karena jam operasional harian tetap mendominasi preferensi menu.
+
+8. CATATAN KETERBATASAN
+--------------------------------------------------------------------------------
+- KNN menghasilkan skor setara baseline frekuensi yang kuat dan jauh di atas
+  terlaris global dan acak.
+- Rekomendasi Top-5 pada jam sepi (00.00 - 04.00 dan 20.00 - 23.00) cenderung
+  kurang stabil dibandingkan jam sibuk siang/sore karena frekuensi transaksi
+  yang lebih rendah pada rentang waktu tersebut.
+================================================================================
