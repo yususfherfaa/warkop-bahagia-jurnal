@@ -13,14 +13,27 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------------------------------------------------------
 -- 0. CEK DATA DUPLIKAT SEBELUM CONSTRAINT UNIQUE
 -- ----------------------------------------------------------------------------
--- Periksa duplikat pengaturan nama:
--- SELECT nama, COUNT(*) FROM settings GROUP BY nama HAVING COUNT(*) > 1;
+-- Jalankan tiga SELECT ini terlebih dahulu pada salinan database.
+-- Hasil setiap query harus kosong sebelum melanjutkan ke bagian migrasi.
+-- Jika ada hasil, rapikan duplikat secara manual; jangan hapus riwayat transaksi.
+-- Duplikat settings.nama yang NULL tidak bertentangan dengan UNIQUE MySQL.
+SELECT nama, COUNT(*) AS jumlah
+FROM settings
+WHERE nama IS NOT NULL
+GROUP BY nama
+HAVING COUNT(*) > 1;
 
 -- Periksa duplikat username akun:
--- SELECT username, COUNT(*) FROM users GROUP BY username HAVING COUNT(*) > 1;
+SELECT username, COUNT(*) AS jumlah
+FROM users
+GROUP BY username
+HAVING COUNT(*) > 1;
 
 -- Periksa duplikat id_order di payments:
--- SELECT id_order, COUNT(*) FROM payments GROUP BY id_order HAVING COUNT(*) > 1;
+SELECT id_order, COUNT(*) AS jumlah
+FROM payments
+GROUP BY id_order
+HAVING COUNT(*) > 1;
 
 -- ----------------------------------------------------------------------------
 -- 1. PENYESUAIAN FOREIGN KEY KE RESTRICT & HAPUS CASCADE BERBAHAYA

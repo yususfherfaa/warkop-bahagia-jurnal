@@ -30,8 +30,7 @@ CREATE TABLE `data_products` (
   `nama_kasir` varchar(100) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_data`),
-  KEY `fk_data_produk` (`id_produk`),
-  CONSTRAINT `fk_data_produk` FOREIGN KEY (`id_produk`) REFERENCES `products` (`id_produk`) ON DELETE CASCADE ON UPDATE CASCADE
+  KEY `fk_data_produk` (`id_produk`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -99,7 +98,7 @@ CREATE TABLE `order_items` (
   KEY `fk_orderitems_order` (`id_order`),
   KEY `fk_orderitems_produk` (`id_produk`),
   CONSTRAINT `fk_orderitems_order` FOREIGN KEY (`id_order`) REFERENCES `orders` (`id_order`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_orderitems_produk` FOREIGN KEY (`id_produk`) REFERENCES `products` (`id_produk`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_orderitems_produk` FOREIGN KEY (`id_produk`) REFERENCES `products` (`id_produk`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -124,13 +123,16 @@ CREATE TABLE `orders` (
   `id_meja` varchar(11) NOT NULL,
   `nama_pelanggan` varchar(100) NOT NULL,
   `total` decimal(12,2) DEFAULT 0.00,
-  `status` enum('sedang_dibuat','menunggu_pembayaran','lunas') DEFAULT 'sedang_dibuat',
+  `status` enum('menunggu_pembayaran','lunas') DEFAULT 'menunggu_pembayaran',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `metode_pembayaran` enum('cash','qris') DEFAULT 'cash',
   PRIMARY KEY (`id_order`),
+  `token` char(16) NOT NULL,
   KEY `fk_orders_meja` (`id_meja`),
-  CONSTRAINT `fk_orders_meja` FOREIGN KEY (`id_meja`) REFERENCES `tables_meja` (`id_meja`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE KEY `uq_orders_token` (`token`),
+  KEY `idx_orders_status_created` (`status`, `created_at`),
+  CONSTRAINT `fk_orders_meja` FOREIGN KEY (`id_meja`) REFERENCES `tables_meja` (`id_meja`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -161,10 +163,10 @@ CREATE TABLE `payments` (
   `kembalian` decimal(12,2) DEFAULT 0.00,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_pay`),
-  KEY `fk_payment_order` (`id_order`),
+  UNIQUE KEY `uniq_payments_id_order` (`id_order`),
   KEY `fk_payment_user` (`id_user`),
   CONSTRAINT `fk_payment_order` FOREIGN KEY (`id_order`) REFERENCES `orders` (`id_order`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_payment_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_payment_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -219,7 +221,8 @@ CREATE TABLE `settings` (
   `id_setting` varchar(10) NOT NULL,
   `nama` varchar(100) DEFAULT NULL,
   `value` text DEFAULT NULL,
-  PRIMARY KEY (`id_setting`)
+  PRIMARY KEY (`id_setting`),
+  UNIQUE KEY `uniq_settings_nama` (`nama`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -271,7 +274,8 @@ CREATE TABLE `users` (
   `nama_kasir` varchar(200) NOT NULL,
   `role` enum('admin','kasir') DEFAULT 'kasir',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_user`)
+  PRIMARY KEY (`id_user`),
+  UNIQUE KEY `uniq_users_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
