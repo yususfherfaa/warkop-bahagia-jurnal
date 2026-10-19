@@ -42,8 +42,17 @@ class Setting extends BaseController
                 ->with('error', implode(' ', $this->validator->getErrors()));
         }
 
-        foreach (['nama_warkop', 'alamat', 'kontak', 'server_url'] as $f) {
+        foreach (['nama_warkop', 'alamat', 'kontak', 'server_url', 'batas_pembayaran_menit'] as $f) {
             $value = $this->request->getPost($f);
+
+            if ($f === 'batas_pembayaran_menit') {
+                $minutes = filter_var($value, FILTER_VALIDATE_INT);
+                if ($minutes === false || $minutes < 1 || $minutes > 1440) {
+                    return redirect()->back()->withInput()
+                        ->with('error', 'Batas pembayaran harus antara 1 dan 1440 menit.');
+                }
+                $value = (string) $minutes;
+            }
 
             $existing = $model
                 ->where('nama', $f)

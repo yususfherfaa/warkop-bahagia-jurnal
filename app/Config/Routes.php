@@ -95,6 +95,7 @@ $routes->group('kasir', ['filter' => ['auth', 'role:kasir']], static function ($
     $routes->get('menu/delete/(:segment)', 'Kasir\Menu::delete/$1');
 
     $routes->get('pesanan', 'Kasir\Pesanan::index');
+    $routes->post('pesanan/batalkan/(:segment)', 'Kasir\Pesanan::cancel/$1', ['filter' => 'csrf']);
     $routes->get('detail-pesanan/(:segment)', 'Kasir\DetailPesanan::index/$1');
     $routes->get('bayar/(:segment)', 'Kasir\Bayar::index/$1');
     $routes->post('bayar/process/(:segment)', 'Kasir\Bayar::process/$1');

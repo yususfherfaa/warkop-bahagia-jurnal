@@ -77,6 +77,16 @@ Versi paket yang dipatok di `requirements.txt`: scikit-learn 1.8.0, pandas 2.2.3
 
 `database/schema.sql` hanya memuat DDL, termasuk kolom token akses pesanan. Dump lama di root adalah arsip historis dan dapat berisi data; gunakan skema bersih untuk instalasi baru. Migrasi SQL manual di `database/` tidak dijalankan otomatis. Cadangkan database dan tinjau isi migrasi sebelum menjalankannya.
 
+### Pesanan belum dibayar
+
+PR-13 menambahkan status `dibatalkan`. Buat cadangan MariaDB sebelum menerapkan `database/migrasi_pembatalan_pesanan.sql`, lalu jalankan file itu secara manual pada database yang benar. Batas waktu bawaan adalah 15 menit dan dapat diubah pada Pengaturan Admin (1–1440 menit). Daftar pesanan dan proses pembayaran memeriksa pesanan kedaluwarsa; untuk pembatalan rutin tanpa trafik web, jadwalkan perintah ini setiap menit:
+
+```sh
+php spark orders:expire
+```
+
+Setiap pembatalan mengunci pesanan dan mengembalikan stok dalam transaksi yang sama. Laporan pendapatan hanya menghitung pesanan berstatus `lunas`.
+
 ### Pengguna database aplikasi
 
 Buat pengguna khusus aplikasi, bukan `root`. Jalankan perintah berikut melalui klien MariaDB/MySQL sebagai administrator database, ganti placeholder kata sandi, dan batasi haknya ke database aplikasi:

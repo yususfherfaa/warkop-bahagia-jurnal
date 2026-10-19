@@ -3,6 +3,7 @@
 namespace App\Controllers\Kasir;
 
 use App\Controllers\BaseController;
+use App\Libraries\OrderCancellationService;
 use App\Models\OrderModel;
 use App\Models\OrderItemModel;
 use App\Models\PaymentModel;
@@ -12,6 +13,7 @@ class Bayar extends BaseController
 {
     public function index($id_order)
     {
+        (new OrderCancellationService())->expireStaleOrders();
         $orderModel = new OrderModel();
         $itemModel = new OrderItemModel();
         $settingModel = new SettingModel();
@@ -20,6 +22,10 @@ class Bayar extends BaseController
 
         if (!$order) {
             return 'Pesanan tidak ditemukan';
+        }
+
+        if ($order['status'] !== 'menunggu_pembayaran') {
+            return redirect()->to('/kasir/pesanan')->with('error', 'Pesanan ini tidak lagi menunggu pembayaran.');
         }
 
         $items = $itemModel
@@ -43,6 +49,9 @@ class Bayar extends BaseController
 
     public function process($id_order)
     {
+        $cancellationService = new OrderCancellationService();
+        $cancellationService->expireStaleOrders();
+        $timeoutMinutes = $cancellationService->timeoutMinutes();
         $orderModel = new OrderModel();
         $paymentModel = new PaymentModel();
 
@@ -68,6 +77,22 @@ class Bayar extends BaseController
         if ($existingPayment) {
             $db->transRollback();
             return redirect()->to('/kasir/struk/' . $id_order);
+        }
+
+        if ($order['status'] !== 'menunggu_pembayaran') {
+            $db->transRollback();
+            return redirect()->to('/kasir/pesanan')->with('error', 'Pesanan sudah dibatalkan atau tidak dapat dibayar.');
+        }
+
+        $expired = $db->query(
+            'SELECT TIMESTAMPDIFF(SECOND, created_at, CURRENT_TIMESTAMP) > ? AS expired
+             FROM orders WHERE id_order = ?',
+            [$timeoutMinutes * 60, $id_order]
+        )->getRowArray();
+        if (!empty($expired['expired'])) {
+            $db->transRollback();
+            $cancellationService->cancelPendingOrder($id_order, $timeoutMinutes);
+            return redirect()->to('/kasir/pesanan')->with('error', 'Batas waktu pembayaran telah lewat; pesanan dibatalkan dan stok dikembalikan.');
         }
 
         $uang_dibayar = (int)$this->request->getPost('uang_dibayar');

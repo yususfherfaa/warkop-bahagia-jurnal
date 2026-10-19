@@ -3,12 +3,14 @@
 namespace App\Controllers\Kasir;
 
 use App\Controllers\BaseController;
+use App\Libraries\OrderCancellationService;
 use App\Models\SettingModel;
 
 class Pesanan extends BaseController
 {
     public function index()
     {
+        (new OrderCancellationService())->expireStaleOrders();
         $db = \Config\Database::connect();
 
         /* ===============================
@@ -73,5 +75,20 @@ class Pesanan extends BaseController
                     ?? 'Warkop Bahagia'
             ]
         );
+    }
+
+    public function cancel(string $id_order)
+    {
+        $result = (new OrderCancellationService())->cancelPendingOrder($id_order);
+
+        if ($result === 'cancelled') {
+            return redirect()->to('/kasir/pesanan')->with('success', 'Pesanan dibatalkan dan stok dikembalikan.');
+        }
+
+        if ($result === 'not_pending') {
+            return redirect()->to('/kasir/pesanan')->with('error', 'Hanya pesanan yang belum dibayar yang dapat dibatalkan.');
+        }
+
+        return redirect()->to('/kasir/pesanan')->with('error', 'Pesanan gagal dibatalkan. Silakan coba lagi.');
     }
 }

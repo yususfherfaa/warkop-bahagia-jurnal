@@ -58,6 +58,11 @@
         color: var(--amber);
         border: 1px solid var(--amber);
     }
+    .status-badge.dibatalkan {
+        background: var(--brick-light);
+        color: var(--brick);
+        border: 1px solid var(--brick);
+    }
     .btn-action-detail {
         background: var(--sand);
         color: var(--espresso);
@@ -117,6 +122,13 @@
 
 <div class="container reveal">
 
+    <?php if (session()->getFlashdata('success')): ?>
+        <div role="status" class="alert-success-beige"><?= esc(session()->getFlashdata('success')) ?></div>
+    <?php endif; ?>
+    <?php if (session()->getFlashdata('error')): ?>
+        <div role="alert" class="alert-error-beige"><?= esc(session()->getFlashdata('error')) ?></div>
+    <?php endif; ?>
+
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
         <div>
             <h1 style="margin:0;">Kelola Pesanan Masuk</h1>
@@ -150,8 +162,8 @@
                     <td><strong><?= esc($o['id_meja']) ?></strong></td>
                     <td><?= esc($o['nama_pelanggan']) ?></td>
                     <td>
-                        <span class="status-badge <?= $o['payment_id'] ? 'lunas' : 'menunggu' ?>">
-                            <?= $o['payment_id'] ? '✓ Lunas' : '⏳ Menunggu Pembayaran' ?>
+                        <span class="status-badge <?= $o['status'] === 'lunas' ? 'lunas' : ($o['status'] === 'dibatalkan' ? 'dibatalkan' : 'menunggu') ?>">
+                            <?= $o['status'] === 'lunas' ? '✓ Lunas' : ($o['status'] === 'dibatalkan' ? 'Dibatalkan' : '⏳ Menunggu Pembayaran') ?>
                         </span>
                     </td>
                     <td style="font-weight:700;">
@@ -165,11 +177,17 @@
                             👁️ Detail
                         </a>
 
-                        <?php if(!$o['payment_id']): ?>
+                        <?php if($o['status'] === 'menunggu_pembayaran'): ?>
                             <a class="btn-action-bayar" href="<?= base_url('/kasir/bayar/'.$o['id_order']) ?>">
                                 💳 Bayar
                             </a>
-                        <?php else: ?>
+                            <form method="post" action="<?= base_url('/kasir/pesanan/batalkan/'.$o['id_order']) ?>" style="display:inline;">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="btn-action-delete" onclick="return confirm('Batalkan pesanan ini dan kembalikan stok?')">
+                                    Batalkan
+                                </button>
+                            </form>
+                        <?php elseif($o['status'] === 'lunas'): ?>
                             <a class="btn-action-struk" href="<?= base_url('/kasir/struk/'.$o['id_order']) ?>">
                                 🧾 Struk
                             </a>

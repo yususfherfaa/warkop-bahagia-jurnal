@@ -160,6 +160,20 @@
             </div>
 
             <div class="form-group">
+                <label for="batas_pembayaran_menit">Batas pembayaran pesanan (menit)</label>
+                <input
+                    type="number"
+                    id="batas_pembayaran_menit"
+                    name="batas_pembayaran_menit"
+                    class="form-control"
+                    min="1"
+                    max="1440"
+                    value="<?= esc($settings['batas_pembayaran_menit'] ?? '15', 'attr') ?>"
+                    required>
+                <small class="text-muted">Pesanan yang belum dibayar melewati batas ini akan dibatalkan otomatis.</small>
+            </div>
+
+            <div class="form-group">
                 <label>Logo Warkop</label>
                 <div class="logo-preview-wrap">
                     <img
