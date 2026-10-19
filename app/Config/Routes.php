@@ -12,8 +12,8 @@ use CodeIgniter\Router\RouteCollection;
 |--------------------------------------------------------------------------
 */
 
-$routes->get('/', 'Auth::index');
-$routes->post('/login/process', 'Auth::processLogin');
+$routes->get('/', 'Auth::index', ['filter' => 'honeypot']);
+$routes->post('/login/process', 'Auth::processLogin', ['filter' => 'honeypot']);
 $routes->get('/logout', 'Auth::logout');
 
 
@@ -31,9 +31,9 @@ $routes->get('/cart/qty/(:any)/(:any)/(:any)', 'Cart::qty/$1/$2/$3');
 
 $routes->get('/cart/remove/(:any)/(:any)', 'Cart::remove/$1/$2');
 
-$routes->get('/cart/(:any)', 'Cart::index/$1');
+$routes->get('/cart/(:any)', 'Cart::index/$1', ['filter' => 'honeypot']);
 
-$routes->post('/checkout/(:any)', 'Checkout::index/$1');
+$routes->post('/checkout/(:any)', 'Checkout::index/$1', ['filter' => 'honeypot']);
 
 $routes->get('/payment-qris/(:segment)/(:segment)','PaymentQris::index/$1/$2');
 

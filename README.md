@@ -12,7 +12,7 @@ Aplikasi pemesanan dan kasir berbasis CodeIgniter 4 dengan API rekomendasi menu 
 ## Instalasi aplikasi
 
 1. Pasang dependensi PHP: `composer install`.
-2. Salin `env` menjadi `.env`, lalu atur environment, URL aplikasi, dan kredensial database lokal. Jangan commit `.env`.
+2. Salin `.env.example` menjadi `.env`, lalu atur environment, URL aplikasi, dan kredensial database. Jangan commit `.env`.
 3. Buat database kosong, misalnya `warkop_bahagia`, kemudian impor skema:
 
    ```sh
@@ -76,3 +76,14 @@ Versi paket yang dipatok di `requirements.txt`: scikit-learn 1.8.0, pandas 2.2.3
 ## Catatan database
 
 `database/schema.sql` hanya memuat DDL, termasuk kolom token akses pesanan. Dump lama di root adalah arsip historis dan dapat berisi data; gunakan skema bersih untuk instalasi baru. Migrasi SQL manual di `database/` tidak dijalankan otomatis. Cadangkan database dan tinjau isi migrasi sebelum menjalankannya.
+
+### Pengguna database aplikasi
+
+Buat pengguna khusus aplikasi, bukan `root`. Jalankan perintah berikut melalui klien MariaDB/MySQL sebagai administrator database, ganti placeholder kata sandi, dan batasi haknya ke database aplikasi:
+
+```sql
+CREATE USER 'warkop_app'@'localhost' IDENTIFIED BY 'GANTI_DENGAN_PASSWORD_KUAT';
+GRANT ALL PRIVILEGES ON `warkop_bahagia`.* TO 'warkop_app'@'localhost';
+```
+
+Atur pengguna dan kata sandi yang sama pada `.env` lokal. Berkas `.env.example` tidak berisi rahasia; `.env` tetap dikecualikan oleh `.gitignore`.
