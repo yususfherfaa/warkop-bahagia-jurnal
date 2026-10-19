@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
+use App\Libraries\FlaskRecommendationClient;
 
 /**
  * RekomendasiAPI.php
@@ -199,28 +200,9 @@ class RekomendasiAPI extends BaseController
      */
     private function getRekomendasiByJam($jam)
     {
-        $url = 'http://127.0.0.1:5001/api/rekomendasi';
-        if ($jam !== null) {
-            $url .= '?jam=' . $jam;
-        }
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-        $output = curl_exec($ch);
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($output === false || $httpcode !== 200) {
+        $hasil = (new FlaskRecommendationClient())->fetch($jam);
+        if ($hasil === null) {
             // Fallback: gunakan rule-based jika Flask tidak tersedia
-            return $this->fallbackRuleBased($jam);
-        }
-
-        $hasil = json_decode($output, true);
-
-        if (!$hasil || !isset($hasil['data'])) {
             return $this->fallbackRuleBased($jam);
         }
 

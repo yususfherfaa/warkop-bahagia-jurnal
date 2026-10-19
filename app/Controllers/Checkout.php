@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
+use App\Libraries\CheckoutRules;
 
 class Checkout extends BaseController
 {
@@ -15,7 +16,7 @@ class Checkout extends BaseController
         }
 
         $method = $this->request->getPost('metode_pembayaran') ?? 'cash';
-        if (!in_array($method, ['cash', 'qris'], true)) {
+        if (!is_string($method) || !CheckoutRules::isValidPaymentMethod($method)) {
             return redirect()->to('/cart/' . $id_meja)->with('error', 'Metode pembayaran tidak valid.');
         }
         $customerName = trim((string) $this->request->getPost('nama_pelanggan'));
@@ -101,7 +102,7 @@ class Checkout extends BaseController
 
         foreach ($quantitiesByProduct as $productId => $quantity) {
             $product = $db->table('products')->where('id_produk', $productId)->get()->getRowArray();
-            if (!$product || $quantity > (int) $product['stok']) {
+            if (!$product || !CheckoutRules::hasEnoughStock($quantity, (int) $product['stok'])) {
                 return redirect()->to('/cart/' . $id_meja)->with('error', 'Stok salah satu menu berubah. Kurangi jumlah sebelum melanjutkan.');
             }
         }

@@ -4,6 +4,7 @@ namespace App\Controllers\Kasir;
 
 use App\Controllers\BaseController;
 use App\Libraries\OrderCancellationService;
+use App\Libraries\PaymentRules;
 use App\Models\OrderModel;
 use App\Models\OrderItemModel;
 use App\Models\PaymentModel;
@@ -74,14 +75,11 @@ class Bayar extends BaseController
         $existingPayment = $paymentModel
             ->where('id_order', $id_order)
             ->first();
-        if ($existingPayment) {
+        if (!PaymentRules::canPay((string) $order['status'], (bool) $existingPayment)) {
             $db->transRollback();
-            return redirect()->to('/kasir/struk/' . $id_order);
-        }
-
-        if ($order['status'] !== 'menunggu_pembayaran') {
-            $db->transRollback();
-            return redirect()->to('/kasir/pesanan')->with('error', 'Pesanan sudah dibatalkan atau tidak dapat dibayar.');
+            return $existingPayment
+                ? redirect()->to('/kasir/struk/' . $id_order)
+                : redirect()->to('/kasir/pesanan')->with('error', 'Pesanan sudah dibatalkan atau tidak dapat dibayar.');
         }
 
         $expired = $db->query(
@@ -98,12 +96,11 @@ class Bayar extends BaseController
         $uang_dibayar = (int)$this->request->getPost('uang_dibayar');
         $total_order  = (int)$order['total'];
 
-        if ($uang_dibayar < $total_order) {
+        $kembalian = PaymentRules::change($uang_dibayar, $total_order);
+        if ($kembalian === null) {
             $db->transRollback();
             return redirect()->back()->with('error', 'Uang dibayar kurang');
         }
-
-        $kembalian = $uang_dibayar - $total_order;
 
         $paymentId = $this->generateIdPay();
 
