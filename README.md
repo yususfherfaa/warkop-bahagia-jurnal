@@ -59,6 +59,20 @@ Angka berikut berasal dari `ml/hasil_evaluasi.txt`. Evaluasi memakai dataset uji
 
 Bootstrap 95% (2.000 iterasi, seed 42) mencatat selisih Precision@5 KNN terhadap terlaris jam −0.029 (CI −0.047 s.d. −0.011), terlaris segmen −0.028 (−0.047 s.d. −0.009), rule manual −0.035 (−0.058 s.d. −0.013), terlaris global +0.059 (+0.032 s.d. +0.085), dan acak +0.146 (+0.118 s.d. +0.176). Sebagian data sintetis memakai bobot awal dari aturan pemilik.
 
+## Data sintetis dan batas klaim
+
+Dataset dibuat oleh `ml/generate_dataset.py`, bukan dikumpulkan dari transaksi pelanggan. Generator mensimulasikan 60 hari mulai 2026-08-03 dengan seed 42, intensitas pesanan Poisson berdasarkan jam, 12% pilihan menu acak, bobot menu dari aturan pemilik, dan percampuran bobot di sekitar pergantian segmen waktu. Karena aturan pemilik ikut membentuk data sintetis, skor terhadap rule manual bersifat sirkular. Hasil evaluasi hanya menggambarkan simulasi tersebut; hasilnya tidak membuktikan dampak pada penjualan nyata. Pada evaluasi tercatat, KNN berada di bawah baseline terlaris per jam, terlaris per segmen, dan rule manual pada Precision@5.
+
+Untuk menjalankan prototipe fase 2 dari root proyek, gunakan seed dan direktori keluaran berikut:
+
+```sh
+python prototipe_fase2.py 42 out
+```
+
+`prototipe_fase2.py` tidak terdapat di checkout repository ini; perintah tersebut berlaku setelah file prototipe fase 2 disediakan. Pipeline yang tersedia di repository dapat dijalankan dengan `python ml/generate_dataset.py` lalu `python ml/ml_model.py`. Untuk angka yang dipakai dalam naskah, gunakan `ml/hasil_evaluasi.txt` sebagai satu-satunya sumber hasil evaluasi.
+
+Versi paket yang dipatok di `requirements.txt`: scikit-learn 1.8.0, pandas 2.2.3, numpy 2.1.3, joblib 1.5.3, matplotlib 3.10.9, Flask 3.1.1, dan Flask-Cors 5.0.1. Versi Python pada evaluasi tersimpan adalah 3.12.6.
+
 ## Catatan database
 
 `database/schema.sql` hanya memuat DDL, termasuk kolom token akses pesanan. Dump lama di root adalah arsip historis dan dapat berisi data; gunakan skema bersih untuk instalasi baru. Migrasi SQL manual di `database/` tidak dijalankan otomatis. Cadangkan database dan tinjau isi migrasi sebelum menjalankannya.
