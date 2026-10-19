@@ -39,6 +39,7 @@ class Menu extends BaseController
             return redirect()->to('/');
         }
 
+        $db = \Config\Database::connect();
         $productModel = new ProductModel();
         $settingModel = new SettingModel();
 
