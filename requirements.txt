@@ -5,3 +5,4 @@ joblib==1.5.3
 matplotlib==3.10.9
 Flask==3.1.1
 Flask-Cors==5.0.1
+PyMySQL==1.1.1

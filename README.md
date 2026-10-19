@@ -101,3 +101,15 @@ GRANT ALL PRIVILEGES ON `warkop_bahagia`.* TO 'warkop_app'@'localhost';
 ```
 
 Atur pengguna dan kata sandi yang sama pada `.env` lokal. Berkas `.env.example` tidak berisi rahasia; `.env` tetap dikecualikan oleh `.gitignore`.
+
+### Evaluasi ML dari transaksi database
+
+Pipeline ML memakai CSV sintetis secara default dan hanya menulis artefak ke `ml/`. Evaluasi data transaksi memakai argumen terpisah dan menyimpan laporan serta model di `ml/hasil_db/`, agar tidak menimpa hasil sintetis:
+
+```sh
+python -m pip install -r requirements.txt
+python ml/ml_model.py --sumber csv
+python ml/ml_model.py --sumber db
+```
+
+Mode database membaca `orders` dan `order_items` melalui SELECT transaksi berstatus `lunas`. Sediakan `DB_HOST`, `DB_PORT` (opsional, bawaan 3306), `DB_USER`, `DB_PASSWORD`, dan `DB_NAME` sebagai environment variable pada terminal. Gunakan akun MariaDB khusus baca saja. Evaluasi ditolak bila rentang kurang dari 30 hari atau hasil kurang dari 2.000 baris; dataset tidak digabungkan dengan data sintetis. `python ml/export_dari_db.py` mengekspor data lunas ke `ml/dataset_db.csv`. Waktu transaksi dikonversi ke `Asia/Jakarta` dengan menganggap timestamp naive dari server sebagai UTC.

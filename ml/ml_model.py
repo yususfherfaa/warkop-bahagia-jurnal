@@ -20,6 +20,7 @@ Alur Evaluasi:
 import os
 import sys
 import platform
+import argparse
 from collections import Counter
 import warnings
 warnings.filterwarnings('ignore')
@@ -46,17 +47,58 @@ print("=" * 65)
 print("  PIPELINE ML REKOMENDASI WARKOP BAHAGIA (PR-01)")
 print("=" * 65)
 
-dataset_path = os.path.join(BASE_ML, 'dataset_warkop.csv')
-if not os.path.exists(dataset_path):
-    raise FileNotFoundError(f"Dataset {dataset_path} belum dibuat. Jalankan generate_dataset.py terlebih dahulu.")
-
-df = pd.read_csv(dataset_path)
+parser = argparse.ArgumentParser(description='Evaluasi model rekomendasi Warkop Bahagia')
+parser.add_argument('--sumber', choices=('csv', 'db'), default='csv')
+args = parser.parse_args()
+source_label = 'sintetis'
+if args.sumber == 'db':
+    try:
+        from export_dari_db import export_from_db
+        df = export_from_db()
+    except Exception as exc:
+        raise SystemExit(f"Gagal mengambil data database: {exc}") from exc
+    if df.empty:
+        raise SystemExit('Data database kosong; evaluasi dihentikan.')
+    days = pd.to_datetime(df['tanggal']).dt.date
+    date_span = (max(days) - min(days)).days + 1
+    if date_span < 30 or len(df) < 2000:
+        raise SystemExit(
+            f"Data database belum cukup: {date_span} hari dan {len(df)} baris; "
+            'syarat minimal 30 hari dan 2000 baris.'
+        )
+    source_label = f"database ({len(df):,} baris, {min(days)} s.d. {max(days)})"
+else:
+    dataset_path = os.path.join(BASE_ML, 'dataset_warkop.csv')
+    if not os.path.exists(dataset_path):
+        raise FileNotFoundError(f"Dataset {dataset_path} belum dibuat. Jalankan generate_dataset.py terlebih dahulu.")
+    df = pd.read_csv(dataset_path)
+OUTPUT_DIR = BASE_ML if args.sumber == 'csv' else os.path.join(BASE_ML, 'hasil_db')
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 print(f"[1/7] Dataset loaded: {len(df):,} baris")
 
-train_df = df[df['hari_ke'] <= 47].copy()
-test_df = df[df['hari_ke'] >= 48].copy()
-print(f"      Train: {len(train_df):,} baris (hari 0-47)")
-print(f"      Test : {len(test_df):,} baris (hari 48-59)")
+if args.sumber == 'csv':
+    train_df = df[df['hari_ke'] <= 47].copy()
+    test_df = df[df['hari_ke'] >= 48].copy()
+    folds = [(23, 24, 29), (29, 30, 35), (35, 36, 41), (41, 42, 47)]
+    day_range_label = 'hari 0-47 / 48-59'
+else:
+    day_values = sorted(int(day) for day in df['hari_ke'].unique())
+    split_index = max(1, int(len(day_values) * 0.8))
+    train_days = day_values[:split_index]
+    test_days = day_values[split_index:]
+    train_df = df[df['hari_ke'].isin(train_days)].copy()
+    test_df = df[df['hari_ke'].isin(test_days)].copy()
+    cv_start = max(1, len(train_days) // 2)
+    validation_days = train_days[cv_start:]
+    blocks = [list(block) for block in np.array_split(validation_days, 4) if len(block)]
+    folds = []
+    for block in blocks:
+        preceding = [day for day in train_days if day < block[0]]
+        if preceding:
+            folds.append((max(preceding), min(block), max(block)))
+    day_range_label = f'hari latih {train_days[0]}-{train_days[-1]} / uji {test_days[0]}-{test_days[-1]}'
+print(f"      Train: {len(train_df):,} baris")
+print(f"      Test : {len(test_df):,} baris ({day_range_label})")
 
 # ── 2. EDA DISTRIBUSI & VISUALISASI ───────────────────────────────────────────
 print("\n[2/7] Membuat visualisasi EDA (eda_distribusi.png)...")
@@ -81,7 +123,7 @@ axes[1].set_ylabel('Jumlah Transaksi')
 axes[1].tick_params(axis='x', rotation=0)
 
 plt.tight_layout()
-eda_fig_path = os.path.join(BASE_ML, 'eda_distribusi.png')
+eda_fig_path = os.path.join(OUTPUT_DIR, 'eda_distribusi.png')
 plt.savefig(eda_fig_path, dpi=200, bbox_inches='tight')
 plt.close()
 print(f"      Tersimpan: {eda_fig_path} (dpi=200)")
@@ -102,12 +144,13 @@ print("\n[3/7] Optimasi K dengan Cross-Validation Expanding Window...")
 K_GRID = [1, 3, 5, 10, 20, 30, 50, 75, 100, 150, 200, 300, 500]
 
 # Expanding window splits on train_df (hari 0-47)
-folds = [
-    (23, 24, 29),  # fold 1: train 0-23, val 24-29
-    (29, 30, 35),  # fold 2: train 0-29, val 30-35
-    (35, 36, 41),  # fold 3: train 0-35, val 36-41
-    (41, 42, 47),  # fold 4: train 0-41, val 42-47
-]
+if not folds:
+    raise SystemExit('Rentang hari tidak cukup untuk CV expanding-window.')
+if args.sumber == 'db':
+    max_fold_train_rows = max(
+        len(train_df[train_df['hari_ke'] <= tr_end]) for tr_end, _, _ in folds
+    )
+    K_GRID = [k for k in K_GRID if k <= max_fold_train_rows]
 
 def query_vector(hour: int, minute: int = 30) -> np.ndarray:
     t = hour + minute / 60.0
@@ -163,7 +206,7 @@ plt.xlabel('Nilai K')
 plt.ylabel('Rata-rata Precision@5')
 plt.grid(True, linestyle=':', alpha=0.6)
 plt.legend()
-pemilihan_k_path = os.path.join(BASE_ML, 'pemilihan_k.png')
+pemilihan_k_path = os.path.join(OUTPUT_DIR, 'pemilihan_k.png')
 plt.savefig(pemilihan_k_path, dpi=200, bbox_inches='tight')
 plt.close()
 print(f"      Tersimpan: {pemilihan_k_path} (dpi=200)")
@@ -183,7 +226,7 @@ model_artifacts = {
     'all_menus': all_menus,
     'train_hours': (train_df['jam'].values + train_df['menit'].values / 60.0) % 24.0,
 }
-model_joblib_path = os.path.join(BASE_ML, 'model_knn.joblib')
+model_joblib_path = os.path.join(OUTPUT_DIR, 'model_knn.joblib')
 joblib.dump(model_artifacts, model_joblib_path)
 print(f"      Model tersimpan: {model_joblib_path}")
 
@@ -330,7 +373,7 @@ for i, v in enumerate(summary_df['Precision@5']):
     plt.text(i, v + 0.005, f"{v:.3f}", ha='center', va='bottom', fontsize=9, fontweight='bold')
 plt.ylim(0, max(summary_df['Precision@5']) * 1.18)
 plt.grid(axis='y', linestyle=':', alpha=0.6)
-perbandingan_path = os.path.join(BASE_ML, 'perbandingan_metode.png')
+perbandingan_path = os.path.join(OUTPUT_DIR, 'perbandingan_metode.png')
 plt.savefig(perbandingan_path, dpi=200, bbox_inches='tight')
 plt.close()
 print(f"      Tersimpan: {perbandingan_path} (dpi=200)")
@@ -375,7 +418,7 @@ for i in range(clf_cm.shape[0]):
 plt.ylabel('Label Sebenarnya (Aturan Pemilik)')
 plt.xlabel('Prediksi Model (KNN Top-5)')
 plt.tight_layout()
-cm_path = os.path.join(BASE_ML, 'confusion_matrix.png')
+cm_path = os.path.join(OUTPUT_DIR, 'confusion_matrix.png')
 plt.savefig(cm_path, dpi=200, bbox_inches='tight')
 plt.close()
 print(f"      Tersimpan: {cm_path} (dpi=200)")
@@ -436,8 +479,9 @@ HASIL EVALUASI MODEL KNN (REKOMENDASI BERBASIS WAKTU) - WARKOP BAHAGIA
 2. SPESIFIKASI DATASET & MODEL
 --------------------------------------------------------------------------------
 Total Data      : {len(df):,} baris
-Data Latih      : {len(train_df):,} baris (hari 0-47, 48 hari)
-Data Uji        : {len(test_df):,} baris (hari 48-59, 12 hari)
+Sumber data     : {source_label}
+Data Latih      : {len(train_df):,} baris ({day_range_label})
+Data Uji        : {len(test_df):,} baris
 Jumlah Konteks  : {n_contexts} konteks (hari, jam) pada data uji
 Fitur Input     : sin((jam + menit/60)/24 * 2pi), cos((jam + menit/60)/24 * 2pi)
 Algoritma       : NearestNeighbors(algorithm='brute', metric='euclidean')
@@ -522,7 +566,7 @@ variasi marjinal karena jam operasional harian tetap mendominasi preferensi menu
 ================================================================================
 """
 
-eval_file_path = os.path.join(BASE_ML, 'hasil_evaluasi.txt')
+eval_file_path = os.path.join(OUTPUT_DIR, 'hasil_evaluasi.txt')
 with open(eval_file_path, 'w', encoding='utf-8') as f:
     f.write(hasil_evaluasi_text)
 
