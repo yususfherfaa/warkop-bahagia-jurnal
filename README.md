@@ -129,6 +129,8 @@ php spark db:seed MenuMinumanSeeder
 
 Jangan jalankan migrasi pada database yang sudah diimpor dari `db_mysql.sql`; dump tersebut sudah berisi skema terbaru. `db_backup_sebelum_varian.sql` hanya arsip skema/data versi lama.
 
+Migrasi keamanan untuk database lama tersedia terpisah di `database/migrasi_keamanan.sql`. Migrasi ini **tidak dijalankan otomatis** oleh impor dump, `php spark migrate`, atau aplikasi. Sebelum menjalankannya secara manual, buat backup database dan periksa duplikat pada `settings.nama`, `users.username`, serta `payments.id_order` sebagaimana instruksi di dalam file; selesaikan duplikat terlebih dahulu agar constraint unik dapat ditambahkan. Migrasi ini mengubah aturan foreign key, menambah indeks dan kolom `aktif`, serta menyeragamkan ID pengguna.
+
 Seeder menyinkronkan katalog `PRD0000031` sampai `PRD0000042` beserta 18 pilihan rasa Good Day Biasa (panas dan es), Good Day Freeze, dan Es Nutrisari. Seeder juga mengisi deskripsi singkat untuk menu katalog yang tersedia. Seeder aman dijalankan ulang; stok produk yang sudah pernah dipesan tidak di-reset. Pelanggan wajib memilih rasa sebelum menambahkan produk ke keranjang. Pilihan, suhu, dan harga pesanan disimpan sebagai snapshot dan ditampilkan pada rincian kasir serta struk. Varian dapat ditambah, diubah, dinonaktifkan, atau dihapus dari halaman edit menu kasir.
 
 Kategori katalog baru memakai label Kopi Panas, Es Kopi, Es Nutrisari, Minuman Non Kopi, Makanan Berat, dan Cemilan. Produk lama dengan kategori Minuman Kopi tetap dapat dikelola.
