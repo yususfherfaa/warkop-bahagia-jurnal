@@ -48,6 +48,29 @@ Vagrantfile
 #-------------------------
 # Temporary Files
 #-------------------------
+__pycache__/
+*.py[cod]
+*.backup.*
+
+# Local Python environments and generated build output
+.venv/
+venv/
+/builds/
+
+# Database exports and recovery dumps (keep schema and migration SQL)
+*.sql
+!/database/*.sql
+*.sql.dump
+*.sql.gz
+*.backup.sql
+
+# Runtime uploads are local; retain SVG placeholders only
+/public/uploads/*
+!/public/uploads/*.svg
+
+# The real QRIS image contains payment destination details.
+/public/uploads/qris.png
+
 /writable/cache/*
 !/writable/cache/index.html
 
