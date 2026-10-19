@@ -87,6 +87,10 @@ php spark orders:expire
 
 Setiap pembatalan mengunci pesanan dan mengembalikan stok dalam transaksi yang sama. Laporan pendapatan hanya menghitung pesanan berstatus `lunas`.
 
+### Hak akses opsi produk
+
+Pengelolaan menu dan opsi produk tetap dibatasi untuk role `kasir`, termasuk route opsi yang memakai `RoleFilter`. Admin tidak dapat membuka halaman menu kasir; ini keputusan desain agar pengelolaan katalog harian dilakukan oleh kasir.
+
 ### Pengguna database aplikasi
 
 Buat pengguna khusus aplikasi, bukan `root`. Jalankan perintah berikut melalui klien MariaDB/MySQL sebagai administrator database, ganti placeholder kata sandi, dan batasi haknya ke database aplikasi:

@@ -93,6 +93,10 @@ $routes->group('kasir', ['filter' => ['auth', 'role:kasir']], static function ($
     $routes->get('menu/edit/(:segment)', 'Kasir\Menu::edit/$1');
     $routes->post('menu/update/(:segment)', 'Kasir\Menu::update/$1');
     $routes->get('menu/delete/(:segment)', 'Kasir\Menu::delete/$1');
+    $routes->post('menu/options/add/(:segment)', 'Kasir\ProductOption::add/$1', ['filter' => 'csrf']);
+    $routes->post('menu/options/update/(:segment)', 'Kasir\ProductOption::update/$1', ['filter' => 'csrf']);
+    $routes->post('menu/options/delete/(:segment)', 'Kasir\ProductOption::delete/$1', ['filter' => 'csrf']);
+    $routes->post('menu/options/activate/(:segment)', 'Kasir\ProductOption::activate/$1', ['filter' => 'csrf']);
 
     $routes->get('pesanan', 'Kasir\Pesanan::index');
     $routes->post('pesanan/batalkan/(:segment)', 'Kasir\Pesanan::cancel/$1', ['filter' => 'csrf']);

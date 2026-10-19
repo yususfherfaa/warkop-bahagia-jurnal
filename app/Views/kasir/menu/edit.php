@@ -166,6 +166,47 @@
 
         </form>
 
+        <section style="margin-top:var(--sp-8);padding-top:var(--sp-5);border-top:1px solid var(--sand);">
+            <h3 style="margin:0 0 6px;">Pilihan varian menu</h3>
+            <p class="text-muted" style="font-size:var(--fs-sm);margin-top:0;">Varian aktif dapat dipilih pelanggan. Varian nonaktif tidak muncul pada menu pelanggan dan nama varian tetap tersimpan di riwayat pesanan.</p>
+            <form method="post" action="<?= base_url('/kasir/menu/options/add/'.$product['id_produk']) ?>" style="display:grid;grid-template-columns:1fr 140px auto;gap:8px;align-items:end;margin-bottom:16px;">
+                <?= csrf_field() ?>
+                <div class="form-group" style="margin:0;">
+                    <label>Nama varian</label>
+                    <input type="text" name="nama_opsi" maxlength="100" required>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label>Tambahan harga</label>
+                    <input type="number" name="tambahan_harga" min="0" value="0" required>
+                </div>
+                <button type="submit" class="btn-update-menu">Tambah varian</button>
+            </form>
+            <?php if (empty($options)): ?>
+                <p class="text-muted" style="font-size:var(--fs-sm);">Belum ada varian.</p>
+            <?php else: ?>
+                <?php foreach ($options as $option): ?>
+                <div style="padding:12px 0;border-top:1px solid var(--sand);">
+                    <form method="post" action="<?= base_url('/kasir/menu/options/update/'.$option['id_opsi']) ?>" style="display:grid;grid-template-columns:1fr 130px auto;gap:8px;align-items:end;">
+                        <?= csrf_field() ?>
+                        <div class="form-group" style="margin:0;">
+                            <label>Nama varian</label>
+                            <input type="text" name="nama_opsi" value="<?= esc($option['nama_opsi']) ?>" maxlength="100" required>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Tambah harga</label>
+                            <input type="number" name="tambahan_harga" value="<?= esc($option['tambahan_harga']) ?>" min="0" required>
+                        </div>
+                        <button type="submit" class="btn-update-menu">Simpan</button>
+                    </form>
+                    <form method="post" action="<?= base_url('/kasir/menu/options/' . ((int) $option['aktif'] === 1 ? 'delete' : 'activate') . '/' . $option['id_opsi']) ?>" onsubmit="return confirm('<?= (int) $option['aktif'] === 1 ? 'Nonaktifkan' : 'Aktifkan kembali' ?> varian ini?')" style="text-align:right;margin-top:6px;">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn-del-cart"><?= (int) $option['aktif'] === 1 ? 'Nonaktifkan' : 'Aktifkan kembali' ?></button>
+                    </form>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </section>
+
     </div>
 
 </div>
