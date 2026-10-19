@@ -19,33 +19,6 @@ $routes->get('/logout', 'Auth::logout');
 
 /*
 |--------------------------------------------------------------------------
-| DASHBOARD
-|--------------------------------------------------------------------------
-*/
-
-$routes->get('/admin/dashboard', 'Admin\Dashboard::index', ['filter' => 'auth']);
-$routes->get('/kasir/dashboard', 'Kasir\Dashboard::index', ['filter' => 'auth']);
-
-
-/*
-|--------------------------------------------------------------------------
-| MENU KASIR
-|--------------------------------------------------------------------------
-*/
-
-$routes->get('/kasir/menu', 'Kasir\Menu::index', ['filter' => 'auth']);
-
-$routes->post('/kasir/menu/add', 'Kasir\Menu::add', ['filter' => 'auth']);
-
-$routes->get('/kasir/menu/edit/(:segment)', 'Kasir\Menu::edit/$1', ['filter' => 'auth']);
-
-$routes->post('/kasir/menu/update/(:segment)', 'Kasir\Menu::update/$1', ['filter' => 'auth']);
-
-$routes->get('/kasir/menu/delete/(:segment)', 'Kasir\Menu::delete/$1', ['filter' => 'auth']);
-
-
-/*
-|--------------------------------------------------------------------------
 | ORDER CUSTOMER
 |--------------------------------------------------------------------------
 */
@@ -70,40 +43,15 @@ $routes->get('/cek-status/(:segment)', 'OrderStatus::cek/$1');
 
 $routes->get('cart/reset/(:segment)', 'Cart::reset/$1');
 
-$routes->get('/reset-cart', function () {
-
-    session()->destroy();
-
-    return 'Session cart berhasil direset';
-});
-
-
-/*
-|--------------------------------------------------------------------------
-| PESANAN KASIR
-|--------------------------------------------------------------------------
-*/
-
-$routes->get('/kasir/pesanan', 'Kasir\Pesanan::index', ['filter' => 'auth']);
-
-$routes->get('/kasir/detail-pesanan/(:segment)', 'Kasir\DetailPesanan::index/$1', ['filter' => 'auth']);
-
-$routes->get('/kasir/bayar/(:segment)', 'Kasir\Bayar::index/$1', ['filter' => 'auth']);
-
-$routes->post('/kasir/bayar/process/(:segment)', 'Kasir\Bayar::process/$1', ['filter' => 'auth']);
-
-$routes->get('/kasir/struk/(:segment)', 'Kasir\Struk::index/$1', ['filter' => 'auth']);
-
-
 /*
 |--------------------------------------------------------------------------
 | LAPORAN
 |--------------------------------------------------------------------------
 */
 
-$routes->get('/laporan', 'Kasir\Laporan::index', ['filter' => 'auth']);
+$routes->get('/laporan', 'Kasir\Laporan::index', ['filter' => ['auth', 'role:admin,kasir']]);
 
-$routes->get('/laporan/pdf', 'Kasir\Laporan::pdf', ['filter' => 'auth']);
+$routes->get('/laporan/pdf', 'Kasir\Laporan::pdf', ['filter' => ['auth', 'role:admin,kasir']]);
 
 /*
 |--------------------------------------------------------------------------
@@ -111,66 +59,52 @@ $routes->get('/laporan/pdf', 'Kasir\Laporan::pdf', ['filter' => 'auth']);
 |--------------------------------------------------------------------------
 */
 
-$routes->get('/laporan-stok', 'Admin\LaporanStok::index', ['filter' => 'auth']);
+$routes->get('/laporan-stok', 'Admin\LaporanStok::index', ['filter' => ['auth', 'role:admin']]);
 
-$routes->get('/laporan-stok/pdf', 'Admin\LaporanStok::pdf', ['filter' => 'auth']);
-
-/*
-|--------------------------------------------------------------------------
-| ADMIN KASIR MANAGEMENT
-|--------------------------------------------------------------------------
-*/
-
-$routes->get('/admin/kasir', 'Admin\Kasir::index', ['filter' => 'auth']);
-
-$routes->get('/admin/kasir/list', 'Admin\Kasir::index', ['filter' => 'auth']);
-
-$routes->get('/admin/kasir/add', 'Admin\Kasir::add', ['filter' => 'auth']);
-
-$routes->post('/admin/kasir/save', 'Admin\Kasir::save', ['filter' => 'auth']);
-
-$routes->get('admin/kasir/edit/(:segment)', 'Admin\Kasir::edit/$1', ['filter' => 'auth']);
-
-$routes->post('admin/kasir/update/(:segment)', 'Admin\Kasir::update/$1', ['filter' => 'auth']);
-
-$routes->get('admin/kasir/delete/(:segment)', 'Admin\Kasir::delete/$1', ['filter' => 'auth']);
-
+$routes->get('/laporan-stok/pdf', 'Admin\LaporanStok::pdf', ['filter' => ['auth', 'role:admin']]);
 
 /*
 |--------------------------------------------------------------------------
-| SETTINGS
+| ADMIN AND KASIR ROUTES
 |--------------------------------------------------------------------------
 */
 
-$routes->get('admin/qr-meja','Admin\Setting::qrMeja');
+$routes->group('admin', ['filter' => ['auth', 'role:admin']], static function ($routes) {
+    $routes->get('dashboard', 'Admin\Dashboard::index');
 
-$routes->group('admin', ['filter' => 'auth'], function($routes) {
+    $routes->get('kasir', 'Admin\Kasir::index');
+    $routes->get('kasir/list', 'Admin\Kasir::index');
+    $routes->get('kasir/add', 'Admin\Kasir::add');
+    $routes->post('kasir/save', 'Admin\Kasir::save');
+    $routes->get('kasir/edit/(:segment)', 'Admin\Kasir::edit/$1');
+    $routes->post('kasir/update/(:segment)', 'Admin\Kasir::update/$1');
+    $routes->get('kasir/delete/(:segment)', 'Admin\Kasir::delete/$1');
 
+    $routes->get('qr-meja', 'Admin\Setting::qrMeja');
     $routes->get('settings', 'Admin\Setting::index');
-
     $routes->post('settings/update', 'Admin\Setting::update');
+});
+
+$routes->group('kasir', ['filter' => ['auth', 'role:kasir']], static function ($routes) {
+    $routes->get('dashboard', 'Kasir\Dashboard::index');
+
+    $routes->get('menu', 'Kasir\Menu::index');
+    $routes->post('menu/add', 'Kasir\Menu::add');
+    $routes->get('menu/edit/(:segment)', 'Kasir\Menu::edit/$1');
+    $routes->post('menu/update/(:segment)', 'Kasir\Menu::update/$1');
+    $routes->get('menu/delete/(:segment)', 'Kasir\Menu::delete/$1');
+
+    $routes->get('pesanan', 'Kasir\Pesanan::index');
+    $routes->get('detail-pesanan/(:segment)', 'Kasir\DetailPesanan::index/$1');
+    $routes->get('bayar/(:segment)', 'Kasir\Bayar::index/$1');
+    $routes->post('bayar/process/(:segment)', 'Kasir\Bayar::process/$1');
+    $routes->get('struk/(:segment)', 'Kasir\Struk::index/$1');
 
 });
 
-/*
-|--------------------------------------------------------------------------
-| API NOTIFICATIONS
-|--------------------------------------------------------------------------
-*/
-
-$routes->get('/api/notifications', 'NotificationAPI::getNotifications', ['filter' => 'auth']);
-
-$routes->post('/api/notifications/mark-read', 'NotificationAPI::markAsRead', ['filter' => 'auth']);
-
-$routes->post('/api/notifications/mark-all-read', 'NotificationAPI::markAllAsRead', ['filter' => 'auth']);
-
-/*
-|--------------------------------------------------------------------------
-| SETUP (untuk init database)
-|--------------------------------------------------------------------------
-*/
-
-$routes->get('/setup/create-notifications', 'Setup::createNotificationsTable');
+$routes->get('/api/notifications', 'NotificationAPI::getNotifications', ['filter' => ['auth', 'role:kasir']]);
+$routes->post('/api/notifications/mark-read', 'NotificationAPI::markAsRead', ['filter' => ['auth', 'role:kasir']]);
+$routes->post('/api/notifications/mark-all-read', 'NotificationAPI::markAllAsRead', ['filter' => ['auth', 'role:kasir']]);
 
 // Rekomendasi berdasarkan jam real-time
 $routes->get('/api/rekomendasi', 'RekomendasiAPI::index');

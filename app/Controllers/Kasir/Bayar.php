@@ -13,7 +13,7 @@ class Bayar extends BaseController
     public function index($id_order)
     {
         if (session()->get('role') !== 'kasir') {
-            return redirect()->to('/login');
+            return redirect()->to('/');
         }
 
         $orderModel = new OrderModel();
@@ -48,7 +48,7 @@ class Bayar extends BaseController
     public function process($id_order)
     {
         if (session()->get('role') !== 'kasir') {
-            return redirect()->to('/login');
+            return redirect()->to('/');
         }
 
         $orderModel = new OrderModel();
