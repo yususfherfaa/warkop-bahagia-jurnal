@@ -346,7 +346,7 @@ body {
 
         <div class="qris-frame">
             <div class="brand"><span class="q">Q</span><span class="r">R</span><span class="i">I</span><span class="s">S</span></div>
-            <img src="<?= base_url($qris) ?>" alt="QRIS Barcode" onerror="this.src='<?= base_url('uploads/qris.png') ?>'">
+            <img src="<?= base_url($qris) ?>" alt="QRIS Barcode" onerror="this.src='<?= base_url('uploads/qris-placeholder.svg') ?>'">
         </div>
 
         <p class="qris-instructions">

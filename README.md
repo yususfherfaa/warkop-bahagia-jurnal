@@ -103,12 +103,28 @@ GET http://localhost:8080/api/rekomendasi/jam/20   ← simulasi malam
 
 ## Katalog Minuman dan Varian Rasa
 
-Jalankan migrasi dan seeder setelah menyiapkan database:
+### Memuat database project
+
+Dump `db_mysql.sql` berisi skema terbaru dan data awal project. Buat database kosong lalu impor dump:
+
+```sql
+CREATE DATABASE warkop_bahagia CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+```
+
+```bash
+mysql -u root -p warkop_bahagia < db_mysql.sql
+```
+
+Nilai kontak, alamat, alamat server, identitas kasir/pelanggan, dan akun pada dump sudah disamarkan untuk publik. Password akun contoh dinonaktifkan. QRIS asli tidak disertakan; atur ulang melalui halaman pengaturan sebelum menerima pembayaran.
+
+Untuk database kosong yang dibuat menggunakan migrasi CodeIgniter, jalankan migrasi dan seeder:
 
 ```bash
 php spark migrate
 php spark db:seed MenuMinumanSeeder
 ```
+
+Jangan jalankan migrasi pada database yang sudah diimpor dari `db_mysql.sql`; dump tersebut sudah berisi skema terbaru. `db_backup_sebelum_varian.sql` hanya arsip skema/data versi lama.
 
 Seeder menyinkronkan katalog `PRD0000031` sampai `PRD0000042` beserta 18 pilihan rasa Good Day Biasa (panas dan es), Good Day Freeze, dan Es Nutrisari. Seeder juga mengisi deskripsi singkat untuk menu katalog yang tersedia. Seeder aman dijalankan ulang; stok produk yang sudah pernah dipesan tidak di-reset. Pelanggan wajib memilih rasa sebelum menambahkan produk ke keranjang. Pilihan, suhu, dan harga pesanan disimpan sebagai snapshot dan ditampilkan pada rincian kasir serta struk. Varian dapat ditambah, diubah, dinonaktifkan, atau dihapus dari halaman edit menu kasir.
 

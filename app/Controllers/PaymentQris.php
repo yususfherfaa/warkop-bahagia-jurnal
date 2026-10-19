@@ -21,14 +21,14 @@ class PaymentQris extends BaseController
 
         $merchantName = trim((string) (setting('nama_warkop') ?? 'Warkop Bahagia'));
         $merchantAddress = trim((string) (setting('alamat') ?? 'Bekasi Utara'));
-        $qris = trim((string) (setting('qris') ?? 'uploads/qris.png'));
+        $qris = trim((string) (setting('qris') ?? 'uploads/qris-placeholder.svg'));
 
         return view('customer/payment_qris', [
             'order' => $order,
             'id_meja' => $id_meja,
             'merchant_name' => $merchantName ?: 'Warkop Bahagia',
             'merchant_address' => $merchantAddress ?: 'Bekasi Utara',
-            'qris' => $qris ?: 'uploads/qris.png',
+            'qris' => $qris ?: 'uploads/qris-placeholder.svg',
         ]);
     }
 }

@@ -52,14 +52,8 @@ __pycache__/
 *.py[cod]
 *.backup.*
 
-# Local database exports may contain personal or machine-specific data.
-/db_mysql.sql
-/db_backup_sebelum_varian.sql
-
-# Runtime uploads are local data; keep only bundled SVG menu assets.
-/public/uploads/*
-!/public/uploads/*.svg
-!/public/uploads/index.html
+# The real QRIS image contains payment destination details.
+/public/uploads/qris.png
 
 /writable/cache/*
 !/writable/cache/index.html

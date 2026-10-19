@@ -183,7 +183,7 @@
                 <label>QRIS Warkop (Untuk Pembayaran Non-Tunai)</label>
                 <div class="logo-preview-wrap">
                     <img
-                        src="<?= base_url($settings['qris'] ?? 'uploads/qris.png') ?>"
+                        src="<?= base_url($settings['qris'] ?? 'uploads/qris-placeholder.svg') ?>"
                         class="logo-preview"
                         id="qrisPreview"
                         alt="QRIS">
