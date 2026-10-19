@@ -158,7 +158,18 @@
             <tbody>
                 <?php foreach($items as $it): ?>
                 <tr>
-                    <td><strong><?= esc($it['nama']) ?></strong></td>
+                    <td>
+                        <strong><?= esc($it['nama']) ?></strong>
+                        <?php if (!empty($it['opsi'])): ?>
+                            <div style="margin-top:3px;color:var(--terracotta);font-size:var(--fs-xs);">Varian: <?= esc($it['opsi']) ?></div>
+                        <?php endif; ?>
+                        <?php if (!empty($it['catatan'])): ?>
+                            <div style="margin-top:3px;color:var(--espresso);font-size:var(--fs-xs);"><strong>Catatan:</strong> <?= esc($it['catatan']) ?></div>
+                        <?php endif; ?>
+                        <?php if (!empty($it['suhu'])): ?>
+                            <div style="margin-top:3px;color:var(--taupe);font-size:var(--fs-xs);"><?= $it['suhu'] === 'panas' ? 'Panas' : 'Es' ?></div>
+                        <?php endif; ?>
+                    </td>
                     <td style="text-align:right;">Rp <?= number_format($it['harga'], 0, ',', '.') ?></td>
                     <td style="text-align:center;"><?= esc($it['qty']) ?></td>
                     <td style="text-align:right; font-weight:600;">Rp <?= number_format($it['subtotal'], 0, ',', '.') ?></td>

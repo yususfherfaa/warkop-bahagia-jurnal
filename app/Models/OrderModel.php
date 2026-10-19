@@ -15,7 +15,7 @@ class OrderModel extends Model
         'nama_pelanggan',
         'status',
         'total',
-        'payment_id',
+        'token',
         'created_at'
     ];
 }

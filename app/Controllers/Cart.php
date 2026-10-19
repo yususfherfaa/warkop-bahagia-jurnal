@@ -23,128 +23,175 @@ class Cart extends BaseController
         return $total;
     }
 
+    private function kembaliKeMenu(string $idMeja, string $pesan)
+    {
+        return redirect()->to('/order/' . $idMeja)->with('error', $pesan);
+    }
+
     public function add($id_produk, $id_meja)
     {
         $db = \Config\Database::connect();
-
         $produk = $db->table('products')
             ->where('id_produk', $id_produk)
             ->get()
             ->getRowArray();
 
-        if (!$produk || $produk['stok'] <= 0) {
-            return redirect()->back();
+        if (!$produk || (int) $produk['stok'] <= 0) {
+            return $this->kembaliKeMenu($id_meja, 'Menu sedang habis atau tidak tersedia.');
         }
 
-        $cart = session()->get('cart_'.$id_meja) ?? [];
-        $suhu = !empty($produk['varian_suhu']) ? $this->suhuValid($this->request->getGet('suhu')) : null;
-        if (!empty($produk['varian_suhu']) && $suhu === null) {
-            $suhu = 'panas';
+        $opsi = null;
+        $idOpsi = trim((string) $this->request->getGet('opsi'));
+        $labelOpsi = in_array($produk['kategori'], ['Makanan Berat', 'Cemilan'], true)
+            ? 'Pilih varian'
+            : ($produk['label_opsi'] ?: 'Pilih varian');
+        if (!empty($produk['punya_opsi'])) {
+            if ($idOpsi === '') {
+                return $this->kembaliKeMenu($id_meja, 'Silakan ' . strtolower($labelOpsi) . ' terlebih dahulu.');
+            }
+
+            $opsi = $db->table('product_options')
+                ->where('id_opsi', $idOpsi)
+                ->where('id_produk', $id_produk)
+                ->where('aktif', 1)
+                ->get()
+                ->getRowArray();
+            if (!$opsi) {
+                return $this->kembaliKeMenu($id_meja, 'Varian yang dipilih sudah tidak tersedia. Silakan pilih kembali.');
+            }
+        } elseif ($idOpsi !== '') {
+            return $this->kembaliKeMenu($id_meja, 'Menu ini tidak memiliki pilihan varian.');
         }
 
-        $key = $suhu ? $id_produk . '_' . $suhu : $id_produk;
-        $harga = (float) $produk['harga'] + ($suhu === 'es' ? (float) ($produk['tambahan_harga_es'] ?? 0) : 0);
-        $totalProdukDiCart = $this->totalQtyProduk($cart, $id_produk);
+        $suhuTetap = $produk['suhu_tetap'] ?? null;
+        if ($suhuTetap === 'panas' || $suhuTetap === 'dingin') {
+            $suhu = $suhuTetap === 'dingin' ? 'es' : 'panas';
+        } elseif (!empty($produk['varian_suhu'])) {
+            $suhu = $this->suhuValid($this->request->getGet('suhu')) ?? 'panas';
+        } else {
+            $suhu = null;
+        }
+
+        $key = $id_produk;
+        if ($suhu !== null) {
+            $key .= '_' . $suhu;
+        }
+        if ($opsi) {
+            $key .= '_' . $opsi['id_opsi'];
+        }
+
+        $cart = session()->get('cart_' . $id_meja) ?? [];
+        $jumlah = filter_var($this->request->getGet('qty') ?? 1, FILTER_VALIDATE_INT);
+        $jumlah = $jumlah === false ? 1 : max(1, min(50, $jumlah));
+        if ($this->totalQtyProduk($cart, $id_produk) + $jumlah > (int) $produk['stok']) {
+            return redirect()->to('/cart/' . $id_meja)->with('error', 'Jumlah menu melebihi stok yang tersedia.');
+        }
+
+        $harga = (float) $produk['harga'];
+        if ($opsi) {
+            $harga += (float) $opsi['tambahan_harga'];
+        } elseif ($suhu === 'es' && empty($produk['suhu_tetap'])) {
+            $harga += (float) ($produk['tambahan_harga_es'] ?? 0);
+        }
 
         if (isset($cart[$key])) {
-            if ($totalProdukDiCart < (int) $produk['stok']) {
-                $cart[$key]['qty']++;
-            }
+            $cart[$key]['qty'] += $jumlah;
         } else {
-            if ($totalProdukDiCart >= (int) $produk['stok']) {
-                return redirect()->to('/cart/'.$id_meja);
-            }
             $cart[$key] = [
                 'id_produk' => $produk['id_produk'],
-                'nama'      => $produk['nama'],
-                'kategori'  => $produk['kategori'],
-                'suhu'      => $suhu,
-                'harga'     => $harga,
-                'qty'       => 1,
-                'key'       => $key,
+                'nama' => $produk['nama'],
+                'kategori' => $produk['kategori'],
+                'suhu' => $suhu,
+                'opsi' => $opsi['nama_opsi'] ?? null,
+                'id_opsi' => $opsi['id_opsi'] ?? null,
+                'label_opsi' => $labelOpsi,
+                'catatan' => '',
+                'harga' => $harga,
+                'qty' => $jumlah,
+                'key' => $key,
             ];
         }
 
-        // simpan
-        session()->set('cart_'.$id_meja, $cart);
-
-        return redirect()->to('/cart/'.$id_meja);
+        session()->set('cart_' . $id_meja, $cart);
+        return redirect()->to('/cart/' . $id_meja);
     }
 
     public function index($id_meja)
-{
-    $sessionKey = 'cart_' . $id_meja;
+    {
+        $cart = session()->get('cart_' . $id_meja) ?? [];
+        $items = array_values($cart);
+        $total = 0;
 
-    $cart = session()->get($sessionKey) ?? [];
+        foreach ($items as $item) {
+            $total += $item['harga'] * $item['qty'];
+        }
 
-    // reset index array
-    $items = array_values($cart);
-
-    $total = 0;
-
-    foreach ($items as $item) {
-
-        $total += $item['harga'] * $item['qty'];
+        return view('customer/cart', [
+            'items' => $items,
+            'total' => $total,
+            'id_meja' => $id_meja,
+        ]);
     }
 
-    return view('customer/cart', [
+    public function note($id_meja, $key)
+    {
+        $sessionKey = 'cart_' . $id_meja;
+        $cart = session()->get($sessionKey) ?? [];
+        if (!isset($cart[$key])) {
+            return redirect()->to('/cart/' . $id_meja)->with('error', 'Item keranjang tidak ditemukan.');
+        }
 
-        'items' => $items,
+        $note = trim((string) $this->request->getPost('catatan'));
+        if (mb_strlen($note) > 500) {
+            return redirect()->to('/cart/' . $id_meja)->with('error', 'Catatan menu maksimal 500 karakter.');
+        }
 
-        'total' => $total,
+        $cart[$key]['catatan'] = $note;
+        session()->set($sessionKey, $cart);
+        return redirect()->to('/cart/' . $id_meja)->with('success', 'Catatan menu berhasil disimpan.');
+    }
 
-        'id_meja' => $id_meja
-    ]);
-}
-public function qty($id_meja, $key, $type)
-{
-    $sessionKey = 'cart_' . $id_meja;
+    public function qty($id_meja, $key, $type)
+    {
+        $sessionKey = 'cart_' . $id_meja;
+        $cart = session()->get($sessionKey) ?? [];
 
-    $cart = session()->get($sessionKey) ?? [];
-
-    if (isset($cart[$key])) {
-        $id_produk = $cart[$key]['id_produk'];
-
-        if ($type == 'plus') {
-
-            $produk = \Config\Database::connect()->table('products')->where('id_produk', $id_produk)->get()->getRowArray();
-            if ($produk && $this->totalQtyProduk($cart, $id_produk) < (int) $produk['stok']) {
-                $cart[$key]['qty']++;
-            }
-
-        } elseif ($type == 'minus') {
-
-            $cart[$key]['qty']--;
-
-            if ($cart[$key]['qty'] <= 0) {
-
-                unset($cart[$key]);
+        if (isset($cart[$key])) {
+            $idProduk = $cart[$key]['id_produk'];
+            if ($type === 'plus') {
+                $produk = \Config\Database::connect()->table('products')
+                    ->where('id_produk', $idProduk)
+                    ->get()
+                    ->getRowArray();
+                if ($produk && $this->totalQtyProduk($cart, $idProduk) < (int) $produk['stok']) {
+                    $cart[$key]['qty']++;
+                }
+            } elseif ($type === 'minus') {
+                $cart[$key]['qty']--;
+                if ($cart[$key]['qty'] <= 0) {
+                    unset($cart[$key]);
+                }
             }
         }
+
+        session()->set($sessionKey, $cart);
+        return redirect()->to('/cart/' . $id_meja);
     }
-
-    session()->set($sessionKey, $cart);
-
-    return redirect()->to('/cart/'.$id_meja);
-}
 
     public function remove($id_meja, $key)
-{
-    $sessionKey = 'cart_' . $id_meja;
-
-    $cart = session()->get($sessionKey) ?? [];
-
-    // debug isi cart
-    // dd($cart);
-
-    if (isset($cart[$key])) {
-
-        unset($cart[$key]);
+    {
+        $sessionKey = 'cart_' . $id_meja;
+        $cart = session()->get($sessionKey) ?? [];
+        if (isset($cart[$key])) {
+            unset($cart[$key]);
+        }
+        session()->set($sessionKey, $cart);
+        return redirect()->to('/cart/' . $id_meja);
     }
 
-    // simpan ulang session
-    session()->set($sessionKey, $cart);
-
-    return redirect()->to('/cart/' . $id_meja);
-}
+    public function reset($id_meja)
+    {
+        session()->remove('cart_' . $id_meja);
+        return redirect()->to('/cart/' . $id_meja);
+    }
 }

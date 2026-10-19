@@ -14,12 +14,14 @@ matplotlib    : 3.10.9
 2. SPESIFIKASI DATASET & MODEL
 --------------------------------------------------------------------------------
 Total Data      : 9,017 baris
-Data Latih      : 7,180 baris (hari 0-47, 48 hari)
-Data Uji        : 1,837 baris (hari 48-59, 12 hari)
+Sumber data     : sintetis
+Data Latih      : 7,180 baris (hari 0-47 / 48-59)
+Data Uji        : 1,837 baris
 Jumlah Konteks  : 279 konteks (hari, jam) pada data uji
 Fitur Input     : sin((jam + menit/60)/24 * 2pi), cos((jam + menit/60)/24 * 2pi)
 Algoritma       : NearestNeighbors(algorithm='brute', metric='euclidean')
 Nilai K Optimum : 200 (dipilih melalui CV Expanding Window pada K-grid)
+Ambang fallback: 150 baris dalam jendela ±1 jam; evaluasi gabungan memakai aturan manual yang sama sebagai proksi fallback.
 Target Output   : Top-5 Rekomendasi Menu (Tie-break: Frekuensi Global, lalu ID Produk)
 
 3. HASIL OPTIMASI K (EXPANDING WINDOW CROSS-VALIDATION)
@@ -42,21 +44,28 @@ K       | Rata-rata Precision@5
 
 4. PERBANDINGAN METODE PADA DATA UJI (EVALUASI PER KONTEKS JAM:30)
 --------------------------------------------------------------------------------
-Metode           | Precision@5 | Recall@5 | Hit Rate@5
------------------+-------------+----------+------------
-KNN              | 0.271       | 0.249    | 0.771     
-Terlaris Jam     | 0.300       | 0.270    | 0.789     
-Terlaris Segmen  | 0.299       | 0.278    | 0.803     
-Rule Manual      | 0.306       | 0.279    | 0.799     
-Terlaris Global  | 0.212       | 0.185    | 0.624     
-Acak             | 0.125       | 0.116    | 0.473     
+Metode                         | Precision@5 | Recall@5 | Hit Rate@5
+-------------------------------+-------------+----------+------------
+KNN                            | 0.271       | 0.249    | 0.771     
+KNN + fallback jam sepi        | 0.271       | 0.246    | 0.771     
+Terlaris Jam                   | 0.300       | 0.270    | 0.789     
+Terlaris Segmen                | 0.299       | 0.278    | 0.803     
+Rule Manual                    | 0.306       | 0.279    | 0.799     
+Terlaris Global                | 0.212       | 0.185    | 0.624     
+Acak                           | 0.125       | 0.116    | 0.473     
+
+KNN murni tetap dilaporkan terpisah dari kombinasi. Kombinasi memakai aturan manual
+sebagai proksi daftar Top-5 ketika kepercayaan di bawah 150;
+fallback PHP menampilkan beberapa kelompok menu sehingga evaluasi top-5 berbasis
+daftar ini adalah proksi, bukan simulasi tampilan kelompok secara penuh.
 
 5. UJI SIGNIFIKANSI BOOTSTRAP 95% (2000 ITERASI, SEED 42)
 --------------------------------------------------------------------------------
 Selisih Berpasangan: KNN - Baseline (Precision@5)
+vs KNN + fallback jam sepi: Selisih = +0.000 (95% CI: -0.002 s.d. +0.002)
 vs Terlaris Jam   : Selisih = -0.029 (95% CI: -0.047 s.d. -0.011)
 vs Terlaris Segmen: Selisih = -0.028 (95% CI: -0.047 s.d. -0.009)
-vs Rule Manual    : Selisih = -0.035 (95% CI: -0.058 s.d. -0.013)
+vs Rule Manual    : Selisih = -0.035 (95% CI: -0.057 s.d. -0.013)
 vs Terlaris Global: Selisih = +0.059 (95% CI: +0.032 s.d. +0.085)
 vs Acak           : Selisih = +0.146 (95% CI: +0.118 s.d. +0.176)
 
@@ -106,11 +115,7 @@ Kepercayaan pada jam 02:30 : 138 baris -> fallback
 Kepercayaan pada jam 12:30 : 897 baris -> KNN
 Konteks uji di bawah ambang: 8 dari 279.
 
-Catatan reproduksibilitas: metrik kombinasi dihitung dari dataset yang sama dengan
-K=200 dan rumus jarak waktu siklis melalui Python standard library karena
-NumPy/scikit-learn tidak tersedia di environment ini. Fallback direpresentasikan
-dengan daftar aturan manual Top-5; hasil ini merupakan proksi untuk fallback
-berbasis kelompok menu di aplikasi. Jalankan ulang ml_model.py pada environment
-dengan dependency lengkap untuk menghasilkan metrik resmi langsung dari pipeline
-(scikit-learn); angka tersebut dapat berbeda karena tie pada jarak tetangga.
+Verifikasi runtime:
+- Pipeline scikit-learn / pandas berhasil dijalankan penuh di environment Python 3.12 (.venv-ml).
+- Endpoint Flask dan pengujian Python mengonfirmasi output kepercayaan (kepercayaan=138 pada 02:30 memicu fallback pada aplikasi PHP, dan kepercayaan=897 pada 12:30 menggunakan rekomendasi KNN murni).
 ================================================================================

@@ -15,6 +15,8 @@ class OrderItemModel extends Model
         'id_produk',
         'nama',
         'kategori',
+        'opsi',
+        'catatan',
         'suhu',
         'qty',
         'harga',

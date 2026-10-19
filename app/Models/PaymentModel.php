@@ -9,6 +9,7 @@ class PaymentModel extends Model
     protected $table = 'payments';
 
     protected $primaryKey = 'id_pay';
+    protected $useAutoIncrement = false;
 
     protected $allowedFields = [
         'id_pay',

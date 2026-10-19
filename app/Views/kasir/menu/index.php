@@ -30,7 +30,8 @@
         font-weight: 600;
     }
     .form-inline-menu input,
-    .form-inline-menu select {
+    .form-inline-menu select,
+    .form-inline-menu textarea {
         width: 100%;
         padding: 10px 14px;
         border: 1.5px solid var(--beige);
@@ -42,7 +43,8 @@
         box-sizing: border-box;
     }
     .form-inline-menu input:focus,
-    .form-inline-menu select:focus {
+    .form-inline-menu select:focus,
+    .form-inline-menu textarea:focus {
         border-color: var(--terracotta);
         outline: none;
         box-shadow: 0 0 0 3px rgba(196, 127, 94, 0.18);
@@ -169,6 +171,9 @@
             <p class="text-muted" style="margin:4px 0 0 0;">Tambah dan perbarui katalog sajian <?= esc(setting('nama_warkop') ?? 'Warkop Bahagia') ?></p>
         </div>
     </div>
+    <?php if (session()->getFlashdata('error')): ?>
+        <div role="alert" style="padding:10px;margin-bottom:16px;border-radius:8px;background:var(--brick-light);color:var(--brick);"><?= esc(session()->getFlashdata('error')) ?></div>
+    <?php endif; ?>
 
     <!-- FORM TAMBAH PRODUK -->
     <div class="form-menu-card">
@@ -185,32 +190,36 @@
             </div>
 
             <div class="form-col">
+                <label>Deskripsi singkat</label>
+                <textarea name="deskripsi" rows="2" maxlength="255" placeholder="Jelaskan menu secara singkat"></textarea>
+            </div>
+
+            <div class="form-col">
                 <label>Kategori</label>
-                <select name="kategori" required>
-                    <option value="">Pilih Kategori</option>
-                    <option value="Makanan Berat">Makanan Berat</option>
-                    <option value="Cemilan">Cemilan</option>
-                    <option value="Minuman Kopi">Minuman Kopi</option>
-                    <option value="Minuman Non Kopi">Minuman Non Kopi</option>
+                <select name="kategori" id="newMenuCategory" required>
+                    <?php foreach ($kategori_suggestions as $kat): ?>
+                        <option value="<?= esc($kat) ?>"><?= esc($kat) ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
 
             <div class="form-col">
                 <label>Harga (Rp)</label>
-                <input type="number" name="harga" placeholder="Contoh: 10000" required>
+                <input type="number" name="harga" min="0" step="any" placeholder="Contoh: 10000" required>
             </div>
 
             <div class="form-col">
                 <label>Stok Awal</label>
-                <input type="number" name="stok" placeholder="Contoh: 50" required>
+                <input type="number" name="stok" min="0" step="1" placeholder="Contoh: 50" required>
             </div>
 
             <div class="form-col">
                 <label>Foto Menu</label>
-                <input type="file" name="gambar" accept="image/*" required>
+                <input type="file" name="gambar" accept=".jpg,.jpeg,.png,.webp">
+                <small class="text-muted">Opsional. JPG, PNG, atau WebP; maksimal 2 MB.</small>
             </div>
 
-            <div class="form-col">
+            <div class="form-col drink-only-field">
                 <label>Pilihan Suhu</label>
                 <label style="display:flex; gap:8px; align-items:center; text-transform:none; letter-spacing:0; color:var(--espresso);">
                     <input type="checkbox" name="varian_suhu" value="1" style="width:auto;">
@@ -218,7 +227,16 @@
                 </label>
             </div>
 
-            <div class="form-col">
+            <div class="form-col drink-only-field">
+                <label>Suhu tetap</label>
+                <select name="suhu_tetap">
+                    <option value="">Tidak ditetapkan</option>
+                    <option value="panas">Panas saja</option>
+                    <option value="dingin">Dingin saja</option>
+                </select>
+            </div>
+
+            <div class="form-col drink-only-field">
                 <label>Tambahan harga Es (Rp)</label>
                 <input type="number" name="tambahan_harga_es" value="0" min="0">
             </div>
@@ -234,15 +252,24 @@
     <div class="menu-grid-admin">
         <?php foreach ($products as $p): ?>
         <div class="menu-item-card">
-            <img src="<?= base_url('uploads/'.$p['gambar']) ?>"
+            <img src="<?= base_url(!empty($p['gambar']) ? 'uploads/'.$p['gambar'] : 'assets/no-image.svg') ?>"
                  alt="<?= esc($p['nama']) ?>"
                  loading="lazy"
-                 onerror="this.src='<?= base_url('assets/noimage.png') ?>'">
+                 onerror="this.src='<?= base_url('assets/no-image.svg') ?>'">
 
             <div class="menu-item-body">
                 <h3><?= esc($p['nama']) ?></h3>
+                <?php if (!empty($p['deskripsi'])): ?>
+                    <p class="text-muted" style="font-size:var(--fs-xs);margin:0 0 8px;"><?= esc($p['deskripsi']) ?></p>
+                <?php endif; ?>
                 <?php if (!empty($p['varian_suhu'])): ?>
                     <div style="display:inline-block; align-self:flex-start; background:var(--sand); border:1px solid var(--beige); border-radius:var(--r-pill); padding:3px 9px; font-size:11px; font-weight:700; margin-bottom:6px;">Panas/Es</div>
+                <?php endif; ?>
+                <?php if (!empty($p['suhu_tetap'])): ?>
+                    <div style="display:inline-block; align-self:flex-start; background:var(--sand); border:1px solid var(--beige); border-radius:var(--r-pill); padding:3px 9px; font-size:11px; font-weight:700; margin-bottom:6px;"><?= $p['suhu_tetap'] === 'panas' ? 'Panas tetap' : 'Es tetap' ?></div>
+                <?php endif; ?>
+                <?php if (!empty($p['punya_opsi'])): ?>
+                    <div style="display:inline-block; align-self:flex-start; background:var(--sage-light); border:1px solid var(--sage); color:var(--sage); border-radius:var(--r-pill); padding:3px 9px; font-size:11px; font-weight:700; margin-bottom:6px;">Memiliki varian</div>
                 <?php endif; ?>
                 <div class="menu-item-cat">🏷️ <?= esc($p['kategori']) ?></div>
                 <div class="menu-item-price">Rp <?= number_format($p['harga'], 0, ',', '.') ?></div>
@@ -275,5 +302,17 @@
 </footer>
 
 <script src="<?= base_url('assets/theme.js') ?>"></script>
+<script>
+const drinkCategories = ['Kopi Panas', 'Es Kopi', 'Es Nutrisari', 'Minuman Non Kopi', 'Minuman Kopi'];
+const newMenuCategory = document.getElementById('newMenuCategory');
+function updateDrinkFields(categorySelect) {
+    const visible = drinkCategories.includes(categorySelect.value);
+    categorySelect.form.querySelectorAll('.drink-only-field').forEach((field) => {
+        field.hidden = !visible;
+    });
+}
+newMenuCategory.addEventListener('change', () => updateDrinkFields(newMenuCategory));
+updateDrinkFields(newMenuCategory);
+</script>
 </body>
 </html>

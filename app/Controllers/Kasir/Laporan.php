@@ -67,14 +67,16 @@ class Laporan extends BaseController
 
         $builder->where('o.status', 'lunas');
 
+        $toExclusive = date('Y-m-d 00:00:00', strtotime($to . ' +1 day'));
+
         $builder->where(
             'o.created_at >=',
             $from . ' 00:00:00'
         );
 
         $builder->where(
-            'o.created_at <=',
-            $to . ' 23:59:59'
+            'o.created_at <',
+            $toExclusive
         );
 
         // FILTER ROLE
@@ -109,7 +111,11 @@ class Laporan extends BaseController
         $menuBuilder = $db->table('order_items oi');
 
         $menuBuilder->select('
-            oi.nama,
+            CONCAT(
+                oi.nama,
+                CASE WHEN COALESCE(oi.opsi, \'\') <> \'\' THEN CONCAT(\' - \', oi.opsi) ELSE \'\' END,
+                CASE WHEN COALESCE(oi.suhu, \'\') <> \'\' THEN CONCAT(\' (\', CASE WHEN oi.suhu = \'panas\' THEN \'Panas\' ELSE \'Es\' END, \')\') ELSE \'\' END
+            ) as nama,
             SUM(oi.qty) as total_terjual,
             SUM(oi.subtotal) as total_pendapatan
         ');
@@ -126,14 +132,16 @@ class Laporan extends BaseController
 
         $menuBuilder->where('o.status', 'lunas');
 
+        $toExclusive = date('Y-m-d 00:00:00', strtotime($to . ' +1 day'));
+
         $menuBuilder->where(
             'o.created_at >=',
             $from . ' 00:00:00'
         );
 
         $menuBuilder->where(
-            'o.created_at <=',
-            $to . ' 23:59:59'
+            'o.created_at <',
+            $toExclusive
         );
 
         if (session()->get('role') == 'kasir') {
@@ -151,7 +159,7 @@ class Laporan extends BaseController
             );
         }
 
-        $menuBuilder->groupBy('oi.nama');
+        $menuBuilder->groupBy(['oi.nama', 'oi.opsi', 'oi.suhu']);
 
         $menuBuilder->orderBy(
             'total_terjual',
@@ -209,8 +217,9 @@ class Laporan extends BaseController
 
     $builder->where('o.status', 'lunas');
 
+    $toExclusive = date('Y-m-d 00:00:00', strtotime($to . ' +1 day'));
     $builder->where('o.created_at >=', $from . ' 00:00:00');
-    $builder->where('o.created_at <=', $to . ' 23:59:59');
+    $builder->where('o.created_at <', $toExclusive);
 
     if (session()->get('role') == 'kasir') {
         $builder->where('p.id_user', session()->get('id_user'));
@@ -332,7 +341,11 @@ $pdf->Ln(1);
 $menuBuilder = $db->table('order_items oi');
 
 $menuBuilder->select('
-    oi.nama,
+    CONCAT(
+        oi.nama,
+        CASE WHEN COALESCE(oi.opsi, \'\') <> \'\' THEN CONCAT(\' - \', oi.opsi) ELSE \'\' END,
+        CASE WHEN COALESCE(oi.suhu, \'\') <> \'\' THEN CONCAT(\' (\', CASE WHEN oi.suhu = \'panas\' THEN \'Panas\' ELSE \'Es\' END, \')\') ELSE \'\' END
+    ) as nama,
     SUM(oi.qty) as total_terjual,
     SUM(oi.subtotal) as total_pendapatan
 ');
@@ -341,8 +354,9 @@ $menuBuilder->join('orders o', 'o.id_order = oi.id_order');
 $menuBuilder->join('payments p', 'p.id_order = o.id_order');
 
 $menuBuilder->where('o.status', 'lunas');
+$toExclusive = date('Y-m-d 00:00:00', strtotime($to . ' +1 day'));
 $menuBuilder->where('o.created_at >=', $from . ' 00:00:00');
-$menuBuilder->where('o.created_at <=', $to . ' 23:59:59');
+$menuBuilder->where('o.created_at <', $toExclusive);
 
 if (session()->get('role') == 'kasir') {
     $menuBuilder->where(
@@ -356,7 +370,7 @@ if (session()->get('role') == 'kasir') {
     );
 }
 
-$menuBuilder->groupBy('oi.nama');
+$menuBuilder->groupBy(['oi.nama', 'oi.opsi', 'oi.suhu']);
 $menuBuilder->orderBy('total_terjual', 'DESC');
 
 $menuList = $menuBuilder->get()->getResultArray();

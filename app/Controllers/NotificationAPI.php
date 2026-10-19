@@ -16,6 +16,26 @@ class NotificationAPI extends BaseController
             ->orderBy('created_at', 'DESC')
             ->findAll();
 
+        if ($notifications !== []) {
+            $orderIds = array_column($notifications, 'id_order');
+            $itemsByOrder = [];
+            $items = \Config\Database::connect()
+                ->table('order_items')
+                ->select('id_order, nama, qty, opsi, suhu, catatan')
+                ->whereIn('id_order', $orderIds)
+                ->orderBy('id_items', 'ASC')
+                ->get()
+                ->getResultArray();
+
+            foreach ($items as $item) {
+                $itemsByOrder[$item['id_order']][] = $item;
+            }
+            foreach ($notifications as &$notification) {
+                $notification['items'] = $itemsByOrder[$notification['id_order']] ?? [];
+            }
+            unset($notification);
+        }
+
         return $this->response->setJSON([
             'success' => true,
             'data' => $notifications,
@@ -45,12 +65,18 @@ class NotificationAPI extends BaseController
 
     public function markAllAsRead()
     {
-        $notifModel = new NotificationModel();
-        
-        $notifModel->updateBatch(
-            $notifModel->where('status', 'unread')->findAll(),
-            'status'
-        );
+        $updated = \Config\Database::connect()
+            ->table('notifications')
+            ->where('status', 'unread')
+            ->update(['status' => 'read']);
+
+        if (!$updated) {
+            log_message('error', 'Unable to mark notifications as read.');
+            return $this->response->setStatusCode(500)->setJSON([
+                'success' => false,
+                'message' => 'Notifikasi gagal diperbarui.',
+            ]);
+        }
 
         return $this->response->setJSON([
             'success' => true,
@@ -58,3 +84,4 @@ class NotificationAPI extends BaseController
         ]);
     }
 }
+

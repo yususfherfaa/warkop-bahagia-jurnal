@@ -77,6 +77,11 @@
             <h2 style="text-align:left; margin:8px 0 4px 0;">Tambah Kasir Baru</h2>
             <p class="text-muted" style="font-size:var(--fs-sm); margin:0;">Buat akun login untuk staf kasir warkop.</p>
         </div>
+        <?php if (session()->getFlashdata('error')): ?>
+            <div role="alert" style="padding:10px;margin-bottom:16px;border-radius:8px;background:var(--brick-light);color:var(--brick);">
+                <?= esc(session()->getFlashdata('error')) ?>
+            </div>
+        <?php endif; ?>
 
         <form method="post" action="<?= base_url('admin/kasir/save') ?>">
 
@@ -101,6 +106,7 @@
                 <input type="password"
                        name="password"
                        placeholder="Masukkan password"
+                       minlength="8"
                        required>
             </div>
 

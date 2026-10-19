@@ -54,7 +54,9 @@ class Cookie extends BaseConfig
      *
      * Cookie will only be set if a secure HTTPS connection exists.
      */
-    public bool $secure = true;
+    // Local development uses HTTP; require Secure cookies in production, where
+    // HTTPS is expected. This avoids CodeIgniter rejecting cookies on localhost.
+    public bool $secure = (ENVIRONMENT === 'production');
 
     /**
      * --------------------------------------------------------------------------

@@ -95,13 +95,14 @@
 <div class="container reveal">
 
     <div class="detail-card">
+        <?php $isPaid = !empty($payment); ?>
 
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-            <a href="<?= base_url('/kasir/pesanan') ?>" class="btn btn-sm" style="background:var(--sand); color:var(--espresso); border:1px solid var(--beige);">
+            <a href="<?= base_url('/kasir/pesanan') ?>" class="btn btn-neutral btn-sm" style="background:var(--sand); color:var(--espresso); border:1px solid var(--beige);">
                 ← Kembali ke Daftar Pesanan
             </a>
-            <?php if($order['payment_id']): ?>
-                <a href="<?= base_url('/kasir/struk/'.$order['id_order']) ?>" class="btn btn-sm" style="background:var(--sage); color:#fff;">
+            <?php if ($isPaid): ?>
+                <a href="<?= base_url('/kasir/struk/'.$order['id_order']) ?>" class="btn btn-neutral btn-sm" style="background:var(--sage); color:#fff;">
                     🧾 Cetak Struk
                 </a>
             <?php else: ?>
@@ -130,8 +131,8 @@
             </div>
             <div class="order-meta-item">
                 <small>Status</small>
-                <strong style="color:<?= $order['payment_id'] ? 'var(--sage)' : 'var(--amber)' ?>;">
-                    <?= $order['payment_id'] ? '✓ Lunas' : '⏳ Menunggu Pembayaran' ?>
+                <strong style="color:<?= $isPaid ? 'var(--sage)' : 'var(--amber)' ?>;">
+                    <?= $isPaid ? '✓ Lunas' : '⏳ Menunggu Pembayaran' ?>
                 </strong>
             </div>
         </div>
@@ -150,7 +151,18 @@
             <tbody>
                 <?php foreach($items as $i): ?>
                 <tr>
-                    <td><strong><?= esc($i['nama']) ?></strong></td>
+                    <td>
+                        <strong><?= esc($i['nama']) ?></strong>
+                        <?php if (!empty($i['opsi'])): ?>
+                            <div style="margin-top:3px;color:var(--terracotta);font-size:var(--fs-xs);">Varian: <?= esc($i['opsi']) ?></div>
+                        <?php endif; ?>
+                        <?php if (!empty($i['catatan'])): ?>
+                            <div style="margin-top:3px;color:var(--espresso);font-size:var(--fs-xs);"><strong>Catatan:</strong> <?= esc($i['catatan']) ?></div>
+                        <?php endif; ?>
+                        <?php if (!empty($i['suhu'])): ?>
+                            <div style="margin-top:3px;color:var(--taupe);font-size:var(--fs-xs);"><?= $i['suhu'] === 'panas' ? 'Panas' : 'Es' ?></div>
+                        <?php endif; ?>
+                    </td>
                     <td style="text-align:center;"><?= esc($i['qty']) ?></td>
                     <td style="text-align:right;">Rp <?= number_format($i['harga'], 0, ',', '.') ?></td>
                     <td style="text-align:right; font-weight:600;">Rp <?= number_format($i['subtotal'], 0, ',', '.') ?></td>

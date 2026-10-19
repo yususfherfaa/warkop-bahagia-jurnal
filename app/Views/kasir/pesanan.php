@@ -135,9 +135,16 @@
             <p class="text-muted" style="margin:4px 0 0 0;">Monitoring daftar pesanan dari seluruh meja secara real-time.</p>
         </div>
         <div>
-            <button onclick="location.reload()" class="btn btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+            <button onclick="location.reload()" class="btn btn-neutral btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
                 🔄 Muat Ulang Pesanan
             </button>
+        </div>
+    </div>
+
+    <div style="background:var(--sand); border:1px solid var(--beige); border-radius:var(--r-lg); padding:12px 18px; margin-top:var(--sp-4); display:flex; align-items:center; gap:12px; font-size:var(--fs-sm); color:var(--espresso);">
+        <span style="font-size:22px; flex-shrink:0;">💡</span>
+        <div>
+            <strong>Alur Status:</strong> Pesanan <em>Menunggu Pembayaran</em> (kuning) diproses pembayarannya via tombol <strong>💳 Bayar</strong>. Setelah lunas, dapur menyiapkan sajian dan kasir dapat mencetak struk.
         </div>
     </div>
 

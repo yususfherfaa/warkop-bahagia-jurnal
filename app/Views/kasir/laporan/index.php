@@ -75,7 +75,7 @@
             color: var(--espresso) !important;
         }
         .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-            background: var(--terracotta) !important;
+            background: var(--button-success) !important;
             color: #fff !important;
             border: none !important;
             border-radius: var(--r-sm) !important;
@@ -144,14 +144,18 @@
             <?php endif; ?>
 
             <div style="align-self:flex-end;">
-                <button type="submit" class="btn btn-sm" style="padding:10px 18px;">
+                <button type="submit" class="btn btn-filter btn-sm" style="padding:10px 18px;">
                     🔍 Terapkan Filter
                 </button>
             </div>
 
             <div style="align-self:flex-end;">
-                <a href="<?= base_url('laporan/pdf?from='.$from.'&to='.$to.'&id_user='.$id_user) ?>"
-                   class="btn btn-sm"
+                <a href="<?= esc(base_url('laporan/pdf?' . http_build_query([
+                    'from' => $from,
+                    'to' => $to,
+                    'id_user' => $id_user,
+                ])), 'attr') ?>"
+                   class="btn btn-neutral btn-sm"
                    style="background:var(--sand); color:var(--espresso); border:1px solid var(--beige); padding:10px 18px;">
                     📄 Unduh Rekap PDF
                 </a>

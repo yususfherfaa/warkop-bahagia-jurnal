@@ -26,7 +26,8 @@
             font-size: var(--fs-sm);
         }
         .form-group input,
-        .form-group select {
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 12px 16px;
             border: 1.5px solid var(--beige);
@@ -39,7 +40,8 @@
             transition: all var(--dur-fast) var(--ease);
         }
         .form-group input:focus,
-        .form-group select:focus {
+        .form-group select:focus,
+        .form-group textarea:focus {
             border-color: var(--terracotta);
             outline: none;
             box-shadow: 0 0 0 3px rgba(196, 127, 94, 0.18);
@@ -92,6 +94,12 @@
             <h2 style="text-align:left; margin:8px 0 4px 0;">Edit Data Menu</h2>
             <p class="text-muted" style="font-size:var(--fs-sm); margin:0;">Perbarui detail harga, stok, atau foto produk.</p>
         </div>
+        <?php if (session()->getFlashdata('error')): ?>
+            <div role="alert" style="padding:10px;margin-bottom:16px;border-radius:8px;background:var(--brick-light);color:var(--brick);"><?= esc(session()->getFlashdata('error')) ?></div>
+        <?php endif; ?>
+        <?php if (session()->getFlashdata('success')): ?>
+            <div role="status" style="padding:10px;margin-bottom:16px;border-radius:8px;background:var(--sage-light);color:var(--sage);"><?= esc(session()->getFlashdata('success')) ?></div>
+        <?php endif; ?>
 
         <form method="post"
               action="<?= base_url('/kasir/menu/update/'.$product['id_produk']) ?>"
@@ -106,13 +114,18 @@
             </div>
 
             <div class="form-group">
+                <label for="deskripsi">Deskripsi singkat</label>
+                <textarea id="deskripsi" name="deskripsi" rows="3" maxlength="255"
+                          placeholder="Jelaskan rasa atau sajian menu secara singkat"><?= esc(old('deskripsi', $product['deskripsi'] ?? '')) ?></textarea>
+                <small class="text-muted">Maksimal 255 karakter. Tampil pada kartu menu pelanggan.</small>
+            </div>
+
+            <div class="form-group">
                 <label>Kategori</label>
-                <select name="kategori" required>
-                    <option value="">Pilih Kategori</option>
-                    <option value="Makanan Berat" <?= $product['kategori'] == 'Makanan Berat' ? 'selected' : '' ?>>Makanan Berat</option>
-                    <option value="Cemilan" <?= $product['kategori'] == 'Cemilan' ? 'selected' : '' ?>>Cemilan</option>
-                    <option value="Minuman Kopi" <?= $product['kategori'] == 'Minuman Kopi' ? 'selected' : '' ?>>Minuman Kopi</option>
-                    <option value="Minuman Non Kopi" <?= $product['kategori'] == 'Minuman Non Kopi' ? 'selected' : '' ?>>Minuman Non Kopi</option>
+                <select name="kategori" id="editMenuCategory" required>
+                    <?php foreach (['Kopi Panas', 'Es Kopi', 'Es Nutrisari', 'Minuman Non Kopi', 'Makanan Berat', 'Cemilan', 'Minuman Kopi'] as $kat): ?>
+                        <option value="<?= esc($kat) ?>" <?= $product['kategori'] === $kat ? 'selected' : '' ?>><?= esc($kat) ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
 
@@ -120,6 +133,8 @@
                 <label>Harga (Rp)</label>
                 <input type="number" name="harga"
                        value="<?= esc($product['harga']) ?>"
+                       min="0"
+                       step="any"
                        placeholder="Harga"
                        required>
             </div>
@@ -128,18 +143,29 @@
                 <label>Stok</label>
                 <input type="number" name="stok"
                        value="<?= esc($product['stok']) ?>"
+                       min="0"
+                       step="1"
                        placeholder="Stok"
                        required>
             </div>
 
-            <div class="form-group">
+            <div class="form-group drink-only-field">
                 <label style="display:flex; gap:8px; align-items:center;">
                     <input type="checkbox" name="varian_suhu" value="1" style="width:auto;" <?= !empty($product['varian_suhu']) ? 'checked' : '' ?>>
                     Menu punya pilihan Panas/Es
                 </label>
             </div>
 
-            <div class="form-group">
+            <div class="form-group drink-only-field">
+                <label>Suhu tetap (opsional)</label>
+                <select name="suhu_tetap">
+                    <option value="" <?= empty($product['suhu_tetap']) ? 'selected' : '' ?>>Pilih sendiri / tidak ditetapkan</option>
+                    <option value="panas" <?= ($product['suhu_tetap'] ?? '') === 'panas' ? 'selected' : '' ?>>Panas saja</option>
+                    <option value="dingin" <?= ($product['suhu_tetap'] ?? '') === 'dingin' ? 'selected' : '' ?>>Dingin saja</option>
+                </select>
+            </div>
+
+            <div class="form-group drink-only-field">
                 <label>Tambahan harga Es (Rp)</label>
                 <input type="number" name="tambahan_harga_es"
                        value="<?= esc($product['tambahan_harga_es'] ?? 0) ?>"
@@ -149,13 +175,13 @@
             <div class="form-group">
                 <label>Foto Produk Saat Ini</label>
                 <div class="img-preview-box">
-                    <img src="<?= base_url('uploads/'.$product['gambar']) ?>"
+                    <img src="<?= base_url(!empty($product['gambar']) ? 'uploads/'.$product['gambar'] : 'assets/no-image.svg') ?>"
                          id="menuImgPreview"
                          alt="<?= esc($product['nama']) ?>"
-                         onerror="this.src='<?= base_url('assets/noimage.png') ?>'">
+                         onerror="this.src='<?= base_url('assets/no-image.svg') ?>'">
                     <div>
-                        <input type="file" name="gambar" accept="image/*" onchange="previewMenuImg(this)">
-                        <small class="text-muted">Biarkan kosong jika tidak ingin mengubah foto.</small>
+                        <input type="file" name="gambar" accept=".jpg,.jpeg,.png,.webp" onchange="previewMenuImg(this)">
+                        <small class="text-muted">Biarkan kosong jika tidak ingin mengubah foto. JPG, PNG, atau WebP; maksimal 2 MB.</small>
                     </div>
                 </div>
             </div>
@@ -226,6 +252,18 @@ function previewMenuImg(input) {
         reader.readAsDataURL(input.files[0]);
     }
 }
+</script>
+<script>
+const drinkCategories = ['Kopi Panas', 'Es Kopi', 'Es Nutrisari', 'Minuman Non Kopi', 'Minuman Kopi'];
+const editMenuCategory = document.getElementById('editMenuCategory');
+function updateDrinkFields(categorySelect) {
+    const visible = drinkCategories.includes(categorySelect.value);
+    categorySelect.form.querySelectorAll('.drink-only-field').forEach((field) => {
+        field.hidden = !visible;
+    });
+}
+editMenuCategory.addEventListener('change', () => updateDrinkFields(editMenuCategory));
+updateDrinkFields(editMenuCategory);
 </script>
 </body>
 </html>

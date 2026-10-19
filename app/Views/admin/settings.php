@@ -114,7 +114,12 @@
 
         <?php if(session()->getFlashdata('success')): ?>
             <div class="alert-success-beige">
-                ✓ <?= session()->getFlashdata('success') ?>
+                ✓ <?= esc(session()->getFlashdata('success')) ?>
+            </div>
+        <?php endif; ?>
+        <?php if(session()->getFlashdata('error')): ?>
+            <div role="alert" style="padding:10px;margin-bottom:16px;border-radius:8px;background:var(--brick-light);color:var(--brick);">
+                <?= esc(session()->getFlashdata('error')) ?>
             </div>
         <?php endif; ?>
 
@@ -186,9 +191,9 @@
                             type="file"
                             name="logo"
                             class="form-control"
-                            accept="image/*"
+                            accept=".jpg,.jpeg,.png,.webp"
                             onchange="previewImg(this, 'logoPreview')">
-                        <small class="text-muted">Format JPG/PNG, rasio 1:1 direkomendasikan.</small>
+                        <small class="text-muted">JPG, PNG, atau WebP; maksimal 2 MB. Rasio 1:1 direkomendasikan.</small>
                     </div>
                 </div>
             </div>
@@ -197,7 +202,7 @@
                 <label>QRIS Warkop (Untuk Pembayaran Non-Tunai)</label>
                 <div class="logo-preview-wrap">
                     <img
-                        src="<?= base_url($settings['qris'] ?? 'uploads/qris.png') ?>"
+                        src="<?= base_url($settings['qris'] ?? 'uploads/qris-placeholder.svg') ?>"
                         class="logo-preview"
                         id="qrisPreview"
                         alt="QRIS">
@@ -206,9 +211,9 @@
                             type="file"
                             name="qris"
                             class="form-control"
-                            accept="image/*"
+                            accept=".jpg,.jpeg,.png,.webp"
                             onchange="previewImg(this, 'qrisPreview')">
-                        <small class="text-muted">Unggah gambar kode barcode QRIS toko Anda.</small>
+                        <small class="text-muted">JPG, PNG, atau WebP; maksimal 2 MB.</small>
                     </div>
                 </div>
             </div>

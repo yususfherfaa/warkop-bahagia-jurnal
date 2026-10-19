@@ -27,9 +27,13 @@ $routes->get('/order/(:any)', 'Order::index/$1');
 
 $routes->get('/cart/add/(:any)/(:any)', 'Cart::add/$1/$2');
 
+$routes->post('/cart/note/(:any)/(:any)', 'Cart::note/$1/$2');
+
 $routes->get('/cart/qty/(:any)/(:any)/(:any)', 'Cart::qty/$1/$2/$3');
 
 $routes->get('/cart/remove/(:any)/(:any)', 'Cart::remove/$1/$2');
+
+$routes->get('cart/reset/(:segment)', 'Cart::reset/$1');
 
 $routes->get('/cart/(:any)', 'Cart::index/$1', ['filter' => 'honeypot']);
 
@@ -40,8 +44,6 @@ $routes->get('/payment-qris/(:segment)/(:segment)','PaymentQris::index/$1/$2');
 $routes->get('/order-success/(:any)/(:any)', 'OrderSuccess::index/$1/$2');
 
 $routes->get('/cek-status/(:segment)', 'OrderStatus::cek/$1');
-
-$routes->get('cart/reset/(:segment)', 'Cart::reset/$1');
 
 /*
 |--------------------------------------------------------------------------

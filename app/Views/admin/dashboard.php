@@ -190,27 +190,57 @@
     <h2 style="text-align:left; font-size:var(--fs-h3); margin-bottom:var(--sp-4);">Aksi Cepat</h2>
 
     <div class="action-grid-admin">
+        <a href="<?= base_url('/admin/recommendation-acceptance') ?>" class="action-card">
+            <div class="action-icon" style="background:var(--button-success);">🎯</div>
+            <div>
+                <div class="action-text">Efektivitas Rekomendasi ML</div>
+                <small class="text-muted" style="font-size:11px;">Tingkat penerimaan rekomendasi per jam</small>
+            </div>
+            <span class="action-arrow">→</span>
+        </a>
+
+        <a href="<?= base_url('/admin/qr-meja') ?>" class="action-card">
+            <div class="action-icon">📱</div>
+            <div>
+                <div class="action-text">Generate QR Meja</div>
+                <small class="text-muted" style="font-size:11px;">Cetak tent card QR pesanan meja</small>
+            </div>
+            <span class="action-arrow">→</span>
+        </a>
+
         <a href="<?= base_url('/admin/kasir') ?>" class="action-card">
             <div class="action-icon">👥</div>
-            <span class="action-text">Kelola Kasir</span>
+            <div>
+                <div class="action-text">Kelola Kasir</div>
+                <small class="text-muted" style="font-size:11px;">Akun kasir aktif & kredensial</small>
+            </div>
             <span class="action-arrow">→</span>
         </a>
 
         <a href="<?= base_url('/laporan') ?>" class="action-card">
             <div class="action-icon">📈</div>
-            <span class="action-text">Laporan Penjualan</span>
+            <div>
+                <div class="action-text">Laporan Penjualan</div>
+                <small class="text-muted" style="font-size:11px;">Rekap transaksi & ekspor PDF</small>
+            </div>
             <span class="action-arrow">→</span>
         </a>
 
         <a href="<?= base_url('/laporan-stok') ?>" class="action-card">
             <div class="action-icon">📦</div>
-            <span class="action-text">Laporan Stok & Menu</span>
+            <div>
+                <div class="action-text">Laporan Stok & Menu</div>
+                <small class="text-muted" style="font-size:11px;">Persediaan bahan & status menu</small>
+            </div>
             <span class="action-arrow">→</span>
         </a>
 
         <a href="<?= base_url('/admin/settings') ?>" class="action-card">
             <div class="action-icon">⚙️</div>
-            <span class="action-text">Pengaturan Sistem</span>
+            <div>
+                <div class="action-text">Pengaturan Sistem</div>
+                <small class="text-muted" style="font-size:11px;">Identitas warkop, QRIS & host</small>
+            </div>
             <span class="action-arrow">→</span>
         </a>
     </div>

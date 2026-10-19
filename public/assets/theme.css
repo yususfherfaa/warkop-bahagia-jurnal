@@ -21,6 +21,12 @@
     --rose-nude:   #D9A99A;
     --sage:        #8FA68A;
     --sage-light:  rgba(143,166,138,.15);
+    --button-success: #5F785C;
+    --button-success-hover: #4F674C;
+    --button-warning: #876014;
+    --button-warning-hover: #704F10;
+    --button-info: #4F7774;
+    --button-info-hover: #416360;
     --amber:       #D9A441;
     --amber-light: rgba(217,164,65,.15);
     --brick:       #B85C4F;
@@ -396,7 +402,7 @@ label {
 }
 .badge-primary { background: rgba(196,127,94,.15); color: var(--terracotta); }
 .badge-success, .badge.lunas { background: var(--sage-light); color: var(--sage); }
-.badge-warning, .badge.menunggu { background: var(--amber-light); color: var(--amber); }
+.badge-warning, .badge.menunggu { background: var(--amber-light); color: #765311; }
 .badge-danger, .badge.batal { background: var(--brick-light); color: var(--brick); }
 .badge-ai {
     background: var(--espresso);
@@ -418,7 +424,7 @@ label {
 }
 .badge-stok { font-size: var(--fs-xs); padding: 3px 8px; border-radius: var(--r-sm); font-weight: 600; display: inline-block; }
 .stok-aman  { background: var(--sage-light);  color: var(--sage); }
-.stok-tipis { background: var(--amber-light); color: var(--amber); }
+.stok-tipis { background: var(--amber-light); color: #765311; }
 .stok-habis { background: var(--brick-light); color: var(--brick); }
 
 /* ── STATUS BADGE (pesanan) ─────────────────────────────────── */
@@ -430,7 +436,7 @@ label {
     font-size: var(--fs-xs);
 }
 .status.lunas     { background: var(--sage-light); color: var(--sage); }
-.status.menunggu  { background: var(--amber-light); color: var(--amber); }
+.status.menunggu  { background: var(--amber-light); color: #765311; }
 
 /* ── CHIP / CATEGORY TAB ─────────────────────────────────────── */
 .chip {
@@ -448,9 +454,9 @@ label {
     white-space: nowrap;
 }
 .chip:hover, .chip.active {
-    background: var(--terracotta);
+    background: var(--button-success);
     color: #fff;
-    border-color: var(--terracotta);
+    border-color: var(--button-success);
 }
 
 /* ── HERO HEADER (customer) ──────────────────────────────────── */
@@ -1501,6 +1507,241 @@ body { animation: fade-in-page var(--dur) var(--ease); }
     box-shadow: var(--shadow-btn);
 }
 .btn-submit:hover { filter: brightness(1.05); }
+
+/* ── SEMANTIC ACTION COLORS ─────────────────────────────────── */
+.btn,
+.btn-primary,
+.btn-submit,
+.btn-submit-beige,
+.btn-add-menu,
+.btn-update-menu,
+.btn-setting-submit,
+.btn-pay-submit,
+.btn-verify-qris,
+.btn-bayar,
+.btn-action-bayar,
+.btn-checkout-beige,
+.btn-checkout,
+.btn-add,
+.rekomen-btn-success,
+.btn-success,
+.floating-cart-bar .cart-link {
+    background: var(--button-success) !important;
+    color: #fff !important;
+    border-color: var(--button-success) !important;
+    box-shadow: 0 4px 14px rgba(95,120,92,.24) !important;
+}
+
+.btn:hover:not(:disabled),
+.btn-primary:hover:not(:disabled),
+.btn-submit:hover,
+.btn-submit-beige:hover,
+.btn-add-menu:hover,
+.btn-update-menu:hover,
+.btn-setting-submit:hover,
+.btn-pay-submit:hover,
+.btn-verify-qris:hover,
+.btn-bayar:hover,
+.btn-action-bayar:hover,
+.btn-checkout-beige:hover,
+.btn-checkout:hover,
+.btn-add:hover,
+.rekomen-btn-success:hover,
+.btn-success:hover,
+.floating-cart-bar .cart-link:hover {
+    background: var(--button-success-hover) !important;
+    border-color: var(--button-success-hover) !important;
+    color: #fff !important;
+    filter: none;
+}
+
+.btn-warning,
+.action-warning {
+    background: var(--button-warning) !important;
+    color: #fff !important;
+    border-color: var(--button-warning) !important;
+    box-shadow: 0 3px 10px rgba(135,96,20,.22) !important;
+}
+
+.btn-warning:hover,
+.action-warning:hover,
+.btn.btn-warning:hover {
+    background: var(--button-warning-hover) !important;
+    border-color: var(--button-warning-hover) !important;
+    color: #fff !important;
+}
+
+.btn-info,
+.action-info {
+    background: var(--button-info) !important;
+    color: #fff !important;
+    border-color: var(--button-info) !important;
+    box-shadow: 0 3px 10px rgba(79,119,116,.2) !important;
+}
+
+.btn-info:hover,
+.action-info:hover,
+.btn.btn-info:hover {
+    background: var(--button-info-hover) !important;
+    border-color: var(--button-info-hover) !important;
+    color: #fff !important;
+}
+
+.btn-danger,
+.btn-cancel,
+.btn-delete,
+.btn-menu-delete,
+.btn-action-delete,
+.btn-del-cart,
+.btn-del-cart button,
+.btn-logout,
+.btn-logout-pill {
+    background: var(--brick) !important;
+    color: #fff !important;
+    border-color: var(--brick) !important;
+    box-shadow: 0 3px 10px rgba(184,92,79,.2) !important;
+}
+
+.btn-danger:hover,
+.btn-cancel:hover,
+.btn-delete:hover,
+.btn-menu-delete:hover,
+.btn-action-delete:hover,
+.btn-del-cart:hover,
+.btn-logout:hover,
+.btn-logout-pill:hover,
+.btn.btn-danger:hover,
+.btn.btn-cancel:hover {
+    background: #A84E43 !important;
+    border-color: #A84E43 !important;
+    color: #fff !important;
+}
+
+.btn-secondary,
+.btn-neutral,
+.btn-filter,
+.btn-detail,
+.btn-action-detail,
+.btn-action-struk,
+.btn-view,
+.btn-view-beige,
+.btn-download-beige,
+.btn-back,
+.btn-add-more,
+.btn-qr-link,
+.btn-print,
+.btn-download,
+.btn-edit,
+.btn-menu-edit,
+.btn-action-edit {
+    background: var(--sand) !important;
+    color: var(--espresso) !important;
+    border: 1px solid var(--beige) !important;
+    box-shadow: none !important;
+}
+
+.btn-secondary:hover,
+.btn-neutral:hover,
+.btn-filter:hover,
+.btn.btn-secondary:hover,
+.btn.btn-neutral:hover,
+.btn.btn-filter:hover,
+.btn-detail:hover,
+.btn-action-detail:hover,
+.btn-action-struk:hover,
+.btn-view:hover,
+.btn-view-beige:hover,
+.btn-download-beige:hover,
+.btn-back:hover,
+.btn-add-more:hover,
+.btn-qr-link:hover,
+.btn-print:hover,
+.btn-download:hover,
+.btn-edit:hover,
+.btn-menu-edit:hover,
+.btn-action-edit:hover {
+    background: var(--beige) !important;
+    border-color: var(--nude) !important;
+    color: var(--espresso) !important;
+    box-shadow: none !important;
+}
+
+.action-card .action-icon,
+.action-btn-kasir .action-icon {
+    background: var(--button-success) !important;
+    color: #fff !important;
+    border-color: var(--button-success) !important;
+}
+
+.action-card:hover .action-icon,
+.action-btn-kasir:hover .action-icon {
+    background: var(--button-success-hover) !important;
+    border-color: var(--button-success-hover) !important;
+}
+
+.badge-stok.menipis {
+    background: var(--amber-light) !important;
+    color: #765311 !important;
+}
+
+.chip:hover,
+.chip.active,
+.suhu-toggle button.active {
+    background: var(--button-success) !important;
+    border-color: var(--button-success) !important;
+    color: #fff !important;
+    box-shadow: 0 3px 10px rgba(95,120,92,.2) !important;
+}
+
+.option-choice.selected {
+    background: var(--sage-light) !important;
+    border-color: var(--button-success) !important;
+    color: var(--espresso) !important;
+    box-shadow: 0 0 0 2px rgba(95,120,92,.18) !important;
+}
+
+.rekomen-card .rekomen-btn:not([disabled]) {
+    background: var(--button-success) !important;
+    color: #fff !important;
+    border-color: var(--button-success) !important;
+    box-shadow: 0 4px 14px rgba(95,120,92,.24) !important;
+}
+
+.rekomen-card .rekomen-btn:not([disabled]):hover {
+    background: var(--button-success-hover) !important;
+    border-color: var(--button-success-hover) !important;
+    color: #fff !important;
+    filter: none !important;
+}
+
+.admin-navbar .nav-link.active,
+.kasir-navbar .nav-link.active {
+    background: var(--button-success) !important;
+    color: #fff !important;
+}
+
+button:disabled,
+input[type="submit"]:disabled,
+.btn:disabled,
+.btn[disabled],
+.btn-add:disabled,
+.btn-add.kosong {
+    background: var(--sand) !important;
+    color: var(--taupe) !important;
+    border-color: var(--beige) !important;
+    box-shadow: none !important;
+    cursor: not-allowed;
+    filter: none;
+    transform: none;
+}
+
+.admin-navbar .nav-mobile-toggle,
+.kasir-navbar .nav-mobile-toggle-kasir {
+    background: transparent !important;
+    color: var(--cream) !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
 
 /* ── LOGO TITLE ──────────────────────────────────────────────── */
 .logo-title {

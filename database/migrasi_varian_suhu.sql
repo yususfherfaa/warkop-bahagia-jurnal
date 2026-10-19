@@ -107,9 +107,9 @@ ON DUPLICATE KEY UPDATE
 
 -- Catat aktivitas penambahan produk baru ke data_products
 INSERT INTO `data_products` (`id_data`, `aktivitas`, `id_produk`, `nama_produk`, `nama_kasir`, `created_at`) VALUES
-('DAT0000026', 'Tambah Produk', 'PRD0000026', 'Nasi Kuning', 'Admin', CURRENT_TIMESTAMP),
-('DAT0000027', 'Tambah Produk', 'PRD0000027', 'Nasi Uduk', 'Admin', CURRENT_TIMESTAMP),
-('DAT0000028', 'Tambah Produk', 'PRD0000028', 'Lontong Sayur', 'Admin', CURRENT_TIMESTAMP),
-('DAT0000029', 'Tambah Produk', 'PRD0000029', 'Bubur Ayam', 'Admin', CURRENT_TIMESTAMP),
-('DAT0000030', 'Tambah Produk', 'PRD0000030', 'Ayam Geprek + Nasi', 'Admin', CURRENT_TIMESTAMP)
+('DAT0000026', 'Tambah Produk', 'PRD0000026', 'Nasi Kuning', 'Kasir Demo', CURRENT_TIMESTAMP),
+('DAT0000027', 'Tambah Produk', 'PRD0000027', 'Nasi Uduk', 'Kasir Demo', CURRENT_TIMESTAMP),
+('DAT0000028', 'Tambah Produk', 'PRD0000028', 'Lontong Sayur', 'Kasir Demo', CURRENT_TIMESTAMP),
+('DAT0000029', 'Tambah Produk', 'PRD0000029', 'Bubur Ayam', 'Kasir Demo', CURRENT_TIMESTAMP),
+('DAT0000030', 'Tambah Produk', 'PRD0000030', 'Ayam Geprek + Nasi', 'Kasir Demo', CURRENT_TIMESTAMP)
 ON DUPLICATE KEY UPDATE `nama_produk` = VALUES(`nama_produk`);

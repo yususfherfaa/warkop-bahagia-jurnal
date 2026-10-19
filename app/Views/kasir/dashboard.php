@@ -226,25 +226,41 @@
 
     </div>
 
+    <div style="background:var(--sand); border:1px solid var(--beige); border-radius:var(--r-lg); padding:12px 18px; margin-bottom:var(--sp-6); display:flex; align-items:center; gap:12px; font-size:var(--fs-sm); color:var(--espresso);">
+        <span style="font-size:22px; flex-shrink:0;">⚡</span>
+        <div>
+            <strong>Status Kasir Aktif:</strong> Sistem secara otomatis memantau pesanan baru dari meja pelanggan. Anda akan menerima notifikasi suara dan tanda lonceng jika ada pesanan masuk yang siap diproses.
+        </div>
+    </div>
+
     <!-- MENU AKSI KASIR -->
     <h2 style="text-align:left; font-size:var(--fs-h3); margin-bottom:var(--sp-4);">Menu Operasional</h2>
 
     <div class="action-grid-kasir">
         <a href="<?= base_url('/kasir/pesanan') ?>" class="action-btn-kasir">
             <div class="action-icon">📋</div>
-            <span class="action-text">Kelola Pesanan</span>
+            <div>
+                <div class="action-text">Kelola Pesanan</div>
+                <small class="text-muted" style="font-size:11px;">Konfirmasi pembayaran & status saji</small>
+            </div>
             <span class="action-arrow">→</span>
         </a>
 
         <a href="<?= base_url('/laporan') ?>" class="action-btn-kasir">
             <div class="action-icon">📈</div>
-            <span class="action-text">Laporan Penjualan</span>
+            <div>
+                <div class="action-text">Laporan Penjualan</div>
+                <small class="text-muted" style="font-size:11px;">Rekap shift kasir & cetak PDF</small>
+            </div>
             <span class="action-arrow">→</span>
         </a>
 
         <a href="<?= base_url('/kasir/menu') ?>" class="action-btn-kasir">
             <div class="action-icon">☕</div>
-            <span class="action-text">Manajemen Menu</span>
+            <div>
+                <div class="action-text">Manajemen Menu</div>
+                <small class="text-muted" style="font-size:11px;">Update stok, harga & varian menu</small>
+            </div>
             <span class="action-arrow">→</span>
         </a>
     </div>
@@ -299,7 +315,11 @@ function showNewOrderToast(latest) {
     if (!toast) return;
 
     title.textContent = 'Pesanan Baru di ' + (latest.id_meja || 'Meja');
-    desc.textContent = (latest.nama_pelanggan || 'Pelanggan') + ' · Rp ' + parseInt(latest.total || 0).toLocaleString('id-ID');
+    const notes = (latest.items || [])
+        .filter(item => item.catatan)
+        .map(item => item.nama + ': ' + item.catatan);
+    const orderSummary = (latest.nama_pelanggan || 'Pelanggan') + ' · Rp ' + parseInt(latest.total || 0).toLocaleString('id-ID');
+    desc.textContent = notes.length ? orderSummary + ' · ' + notes.join(' | ') : orderSummary;
     toast.classList.add('show');
     setTimeout(() => { toast.classList.remove('show'); }, 4000);
 }
@@ -334,15 +354,46 @@ function updateNotificationUI(notifications) {
     } else {
         count.textContent = notifications.length;
         count.style.display = 'flex';
-        
-        list.innerHTML = notifications.map(notif => `
-            <li class="notification-item unread" onclick="handleNotificationClick(${notif.id_notif})">
-                <div class="notification-item-meja">📍 ${notif.id_meja}</div>
-                <div class="notification-item-nama" style="color:var(--espresso);font-weight:600;font-size:14px;margin-top:4px;">👤 ${notif.nama_pelanggan}</div>
-                <div class="notification-item-total" style="color:var(--sage);font-weight:700;font-size:14px;margin-top:4px;">💰 Rp ${parseInt(notif.total).toLocaleString('id-ID')}</div>
-                <div class="notification-item-time" style="color:var(--taupe);font-size:12px;margin-top:4px;">⏱️ ${formatTime(notif.created_at)}</div>
-            </li>
-        `).join('');
+        list.replaceChildren();
+        notifications.forEach(notif => {
+            const item = document.createElement('li');
+            item.className = 'notification-item unread';
+            item.addEventListener('click', () => handleNotificationClick(notif.id_notif));
+
+            const details = [
+                ['notification-item-meja', '📍 ' + (notif.id_meja || '')],
+                ['notification-item-nama', '👤 ' + (notif.nama_pelanggan || '')],
+                ['notification-item-total', '💰 Rp ' + parseInt(notif.total || 0).toLocaleString('id-ID')],
+            ];
+            details.forEach(([className, text]) => {
+                const line = document.createElement('div');
+                line.className = className;
+                line.textContent = text;
+                item.appendChild(line);
+            });
+
+            (notif.items || []).forEach(orderItem => {
+                const line = document.createElement('div');
+                line.style.cssText = 'color:var(--espresso);font-size:12px;margin-top:5px;';
+                line.textContent = (orderItem.nama || 'Menu') + ' × ' + parseInt(orderItem.qty || 0);
+                if (orderItem.opsi) line.textContent += ' · ' + orderItem.opsi;
+                if (orderItem.suhu) line.textContent += ' · ' + (orderItem.suhu === 'panas' ? 'Panas' : 'Es');
+                item.appendChild(line);
+
+                if (orderItem.catatan) {
+                    const note = document.createElement('div');
+                    note.style.cssText = 'color:var(--terracotta);font-size:12px;margin:2px 0 0 8px;';
+                    note.textContent = 'Catatan: ' + orderItem.catatan;
+                    item.appendChild(note);
+                }
+            });
+
+            const time = document.createElement('div');
+            time.className = 'notification-item-time';
+            time.textContent = '⏱️ ' + formatTime(notif.created_at);
+            item.appendChild(time);
+            list.appendChild(item);
+        });
     }
 }
 

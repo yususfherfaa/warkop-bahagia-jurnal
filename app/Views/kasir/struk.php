@@ -161,8 +161,18 @@ td {
         <?php foreach($items as $i): ?>
         <tr>
             <td>
-                <?= esc($i['nama']) ?><br>
-                <small style="color:#8B6B4F;"><?= (int) $i['qty'] ?> x Rp <?= number_format($i['harga'], 0, ',', '.') ?></small>
+                <?= esc($i['nama']) ?>
+                <?php if (!empty($i['opsi'])): ?>
+                    <br><small style="color:#8B6B4F;">Varian: <?= esc($i['opsi']) ?></small>
+                <?php endif; ?>
+                <?php if (!empty($i['catatan'])): ?>
+                    <br><small style="color:#8B6B4F;">Catatan: <?= esc($i['catatan']) ?></small>
+                <?php endif; ?>
+                <?php if (!empty($i['suhu'])): ?>
+                    <br><small style="color:#8B6B4F;"><?= $i['suhu'] === 'panas' ? 'Panas' : 'Es' ?></small>
+                <?php endif; ?>
+                <br>
+                    <small style="color:#8B6B4F;"><?= (int) $i['qty'] ?> x Rp <?= number_format($i['harga'], 0, ',', '.') ?></small>
             </td>
             <td class="text-right">
                 Rp <?= number_format($i['subtotal'], 0, ',', '.') ?>

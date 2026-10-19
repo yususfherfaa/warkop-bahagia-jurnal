@@ -82,6 +82,11 @@
             <h2 style="text-align:left; margin:8px 0 4px 0;">Edit Data Kasir</h2>
             <p class="text-muted" style="font-size:var(--fs-sm); margin:0;">Perbarui informasi atau reset password akun kasir.</p>
         </div>
+        <?php if (session()->getFlashdata('error')): ?>
+            <div role="alert" style="padding:10px;margin-bottom:16px;border-radius:8px;background:var(--brick-light);color:var(--brick);">
+                <?= esc(session()->getFlashdata('error')) ?>
+            </div>
+        <?php endif; ?>
 
         <form method="post" action="<?= base_url('admin/kasir/update/'.$kasir['id_user']) ?>">
 
@@ -112,7 +117,8 @@
                 <label>Password Baru</label>
                 <input type="password"
                        name="password"
-                       placeholder="Kosongkan jika password tidak diubah">
+                       placeholder="Kosongkan jika password tidak diubah"
+                       minlength="8">
             </div>
 
             <button type="submit" class="btn-submit-beige">

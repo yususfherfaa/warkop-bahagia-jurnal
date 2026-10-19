@@ -36,7 +36,7 @@
         color: var(--espresso) !important;
     }
     .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-        background: var(--terracotta) !important;
+        background: var(--button-success) !important;
         color: #fff !important;
         border: none !important;
         border-radius: var(--r-sm) !important;
@@ -77,7 +77,7 @@
             <p class="text-muted" style="margin:4px 0 0 0;">Monitoring persediaan bahan dan stok menu di <?= esc(setting('nama_warkop') ?? 'Warkop Bahagia') ?></p>
         </div>
         <div>
-            <a href="<?= base_url('kasir/menu') ?>" class="btn btn-sm">
+            <a href="<?= base_url('kasir/menu') ?>" class="btn btn-neutral btn-sm">
                 ☕ Tambah / Kelola Menu
             </a>
         </div>
@@ -101,10 +101,10 @@
                 <?php foreach($produk as $p): ?>
                 <tr>
                     <td style="text-align:center;">
-                        <img src="<?= base_url('uploads/'.$p['gambar']) ?>"
+                        <img src="<?= base_url(!empty($p['gambar']) ? 'uploads/'.$p['gambar'] : 'assets/no-image.svg') ?>"
                              alt="<?= esc($p['nama']) ?>"
                              style="width:48px; height:48px; object-fit:cover; border-radius:var(--r-sm); border:1px solid var(--sand);"
-                             onerror="this.src='<?= base_url('assets/noimage.png') ?>'">
+                             onerror="this.src='<?= base_url('assets/no-image.svg') ?>'">
                     </td>
                     <td><code><?= esc($p['id_produk']) ?></code></td>
                     <td><strong><?= esc($p['nama']) ?></strong></td>

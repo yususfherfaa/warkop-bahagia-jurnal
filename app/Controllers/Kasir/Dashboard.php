@@ -25,11 +25,14 @@ class Dashboard extends BaseController
            STATISTIK HARI INI
         ====================== */
 
+        $todayStart = date('Y-m-d 00:00:00');
+        $tomorrowStart = date('Y-m-d 00:00:00', strtotime('+1 day'));
+
         $total_pesanan = $db->table('payments')
             ->selectCount('id_order')
             ->where('id_user', $id_user)
-            ->where('created_at >=', date('Y-m-d 00:00:00'))
-            ->where('created_at <', date('Y-m-d 23:59:59'))
+            ->where('created_at >=', $todayStart)
+            ->where('created_at <', $tomorrowStart)
             ->get()
             ->getRow()
             ->id_order;
@@ -37,8 +40,8 @@ class Dashboard extends BaseController
         $total_pendapatan = $db->table('payments')
             ->selectSum('total_order')
             ->where('id_user', $id_user)
-            ->where('created_at >=', date('Y-m-d 00:00:00'))
-            ->where('created_at <', date('Y-m-d 23:59:59'))
+            ->where('created_at >=', $todayStart)
+            ->where('created_at <', $tomorrowStart)
             ->get()
             ->getRow()
             ->total_order ?? 0;

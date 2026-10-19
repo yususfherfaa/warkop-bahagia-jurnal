@@ -8,6 +8,10 @@ class CreateNotificationsTable extends Migration
 {
     public function up()
     {
+        if ($this->db->tableExists('notifications')) {
+            return;
+        }
+
         $this->forge->addField([
             'id_notif' => [
                 'type' => 'INT',
